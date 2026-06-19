@@ -211,11 +211,11 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** a vendég megnyitja a saját meghívóját és kap egy QR-kódot.
 
-- [ ] **7.1 – QR könyvtár:** `npm install qrcode` (+ típusok).
-- [ ] **7.2 – `/invite/[eventId]`** oldal: wallet connect + esemény-alapadatok kijelzése.
-- [ ] **7.3 – Meghívó-ellenőrzés:** `isValidInvite(eventId, csatlakozott_cím)` hívása; ha érvényes, mutasd a QR-t, ha nem, magyarázó üzenet.
-- [ ] **7.4 – QR-kód generálás** a payloadból: `{ "eventId": <id>, "guest": "0x..." }`.
-- [ ] **7.5 – Állapot-jelzés:** "Érvényes meghívó" / "Már felhasznált" / "Nincs meghívód".
+- [x] **7.1 – QR könyvtár:** `npm install qrcode` (+ típusok).
+- [x] **7.2 – `/invite/[eventId]`** oldal: wallet connect + esemény-alapadatok kijelzése.
+- [x] **7.3 – Meghívó-ellenőrzés:** `isValidInvite(eventId, csatlakozott_cím)` hívása; ha érvényes, mutasd a QR-t, ha nem, magyarázó üzenet.
+- [x] **7.4 – QR-kód generálás** a payloadból: `{ "eventId": <id>, "guest": "0x..." }`.
+- [x] **7.5 – Állapot-jelzés:** "Érvényes meghívó" / "Már felhasznált" / "Nincs meghívód".
 - [ ] **7.6 – Commit:** `feat: guest invite page + QR`.
 
 🧠 *Miért JSON a QR-ben?* A scanner ezt olvassa be, és ebből tudja, melyik eseményre + melyik címre kell a check-int indítani.
