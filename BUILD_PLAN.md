@@ -192,13 +192,13 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** a szervező eseményt hoz létre és meghív vendégeket – böngészőből.
 
-- [ ] **6.1 – `/admin`** oldal: a csatlakozott wallethez tartozó események listája (a `EventCreated` logokból szűrve organizerre).
-- [ ] **6.2 – `/admin/events/new`** űrlap: név, leírás, kezdési idő → `createEvent` tranzakció.
-- [ ] **6.3 – Tranzakció-állapotok kezelése:** pending / success / error visszajelzés a UI-n (ne fagyjon meg a gomb).
-- [ ] **6.4 – `/admin/events/[id]`** esemény-részletek: adatok + meghívottak listája.
-- [ ] **6.5 – Invite form** ezen az oldalon: wallet cím → `inviteGuest`. (Opcionális: több cím → `inviteMany`.)
-- [ ] **6.6 – Scanner-kezelés:** scanner cím hozzáadása/tiltása → `setScanner`.
-- [ ] **6.7 – Check-in státusz** oszlop a meghívottaknál (a `checkedIn` mappingből / `GuestCheckedIn` logokból).
+- [x] **6.1 – `/admin`** oldal: a csatlakozott wallethez tartozó események listája (a `EventCreated` logokból szűrve organizerre).
+- [x] **6.2 – `/admin/events/new`** űrlap: név, leírás, kezdési idő → `createEvent` tranzakció.
+- [x] **6.3 – Tranzakció-állapotok kezelése:** pending / success / error visszajelzés a UI-n (ne fagyjon meg a gomb).
+- [x] **6.4 – `/admin/events/[id]`** esemény-részletek: adatok + meghívottak listája.
+- [x] **6.5 – Invite form** ezen az oldalon: wallet cím → `inviteGuest`. (Opcionális: több cím → `inviteMany`.)
+- [x] **6.6 – Scanner-kezelés:** scanner cím hozzáadása/tiltása → `setScanner`.
+- [x] **6.7 – Check-in státusz** oszlop a meghívottaknál (a `checkedIn` mappingből / `GuestCheckedIn` logokból).
 - [ ] **6.8 – Commit:** `feat: admin dashboard`.
 
 ⚠️ Cím-validáció: ellenőrizd, hogy a beírt vendégcím valódi formátumú (viem `isAddress`), különben a tranzakció elszáll.

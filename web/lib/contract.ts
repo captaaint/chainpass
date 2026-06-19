@@ -10,6 +10,9 @@ if (contractAddress !== "" && !isAddress(contractAddress)) {
 export const chainInviteAddress = contractAddress as Address;
 export const hasChainInviteAddress = contractAddress !== "";
 export const chainInviteChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "11155111");
+export const chainInviteDeploymentBlock = BigInt(
+  process.env.NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK ?? "11097427",
+);
 
 export const chainInviteAbi = [
   {
@@ -59,6 +62,49 @@ export const chainInviteAbi = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "events",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    outputs: [
+      { name: "name", type: "string", internalType: "string" },
+      { name: "description", type: "string", internalType: "string" },
+      { name: "startTime", type: "uint256", internalType: "uint256" },
+      { name: "organizer", type: "address", internalType: "address" },
+      { name: "active", type: "bool", internalType: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "invited",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+  },
+  {
+    type: "function",
+    name: "checkedIn",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+  },
+  {
+    type: "function",
+    name: "scannerAllowed",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
   },
   {
     type: "function",

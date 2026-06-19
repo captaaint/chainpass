@@ -5,22 +5,18 @@ import {
   CheckCircle2,
   Copy,
   ExternalLink,
-  LogOut,
-  PlugZap,
   RefreshCw,
-  Wallet,
 } from "lucide-react";
 import { useMemo } from "react";
 import {
   useAccount,
   useChainId,
-  useConnect,
-  useDisconnect,
   useReadContract,
   useSwitchChain,
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
 
+import { PageHeader } from "@/components/page-header";
 import {
   chainInviteAbi,
   chainInviteAddress,
@@ -28,23 +24,12 @@ import {
   hasChainInviteAddress,
 } from "@/lib/contract";
 
-function shortenAddress(address?: string) {
-  if (!address) {
-    return "";
-  }
-
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
 export default function Home() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { connectors, connect, isPending: isConnectPending } = useConnect();
-  const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
 
   const isSepolia = chainId === sepolia.id;
-  const injectedConnector = connectors[0];
 
   const {
     data: eventCounter,
@@ -88,46 +73,7 @@ export default function Home() {
   return (
     <main className="min-h-screen px-4 py-6 text-[#1d2527] md:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <header className="flex flex-col gap-4 border-b border-[#d8d2c6] pb-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#5f6f52]">
-              ChainInvite
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold text-[#1d2527] md:text-3xl">
-              Event check-in console
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {isConnected ? (
-              <>
-                <span className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-medium">
-                  <Wallet size={17} aria-hidden="true" />
-                  {shortenAddress(address)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => disconnect()}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-                  title="Wallet disconnect"
-                >
-                  <LogOut size={17} aria-hidden="true" />
-                  Disconnect
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                disabled={!injectedConnector || isConnectPending}
-                onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-                className="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#1d6f68] px-4 text-sm font-semibold text-white transition hover:bg-[#15534e] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <PlugZap size={17} aria-hidden="true" />
-                {isConnectPending ? "Connecting" : "Connect Wallet"}
-              </button>
-            )}
-          </div>
-        </header>
+        <PageHeader eyebrow="ChainInvite" title="Event check-in console" />
 
         <section className="grid min-w-0 gap-4 md:grid-cols-[1.1fr_0.9fr]">
           <div className="min-w-0 rounded-md border border-[#d8d2c6] bg-white p-5">
