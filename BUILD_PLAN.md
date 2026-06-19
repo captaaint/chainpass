@@ -24,10 +24,10 @@
 
 - [x] **0.1 – Node.js (LTS) telepítése.** Ellenőrzés: `node -v` (≥ 20) és `npm -v` fusson le.
 - [x] **0.2 – Kódszerkesztő + bővítmények.** VS Code + a "Solidity" (Nomic Foundation) és "Prettier" bővítmények.
-- [ ] **0.3 – MetaMask wallet telepítése** (böngésző-bővítmény). Hozz létre egy **külön, csak tesztre szánt** walletet.
+- [x] **0.3 – MetaMask wallet telepítése** (böngésző-bővítmény). Hozz létre egy **külön, csak tesztre szánt** walletet.
   - ⚠️ Soha ne tedd ebbe valódi pénzt, és a *seed phrase*-t soha ne másold be kódba/fájlba.
-- [ ] **0.4 – Sepolia teszt-ETH szerzése** egy faucet-ről (pl. a wallet hálózatát Sepolia-ra állítva). Erre a deployhoz lesz szükség.
-- [ ] **0.5 – Ingyenes RPC-kulcs** beszerzése (Alchemy vagy Infura), Sepolia hálózathoz. Mentsd el az RPC URL-t.
+- [x] **0.4 – Sepolia teszt-ETH szerzése** egy faucet-ről (pl. a wallet hálózatát Sepolia-ra állítva). Erre a deployhoz lesz szükség.
+- [x] **0.5 – Ingyenes RPC-kulcs** beszerzése (Alchemy vagy Infura), Sepolia hálózathoz. Mentsd el az RPC URL-t.
 - [ ] **0.6 – Git repo rendberakása.** Ez a mappa már git repo. Hozz létre egy `.gitignore`-t (lásd lent) és csinálj első commitot. *(Részben kész: `.gitignore` létrehozva; első commit még nincs.)*
 
 🧠 **Fogalmak:**
@@ -88,36 +88,36 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 🧠 **Tanulási mini-sorrend (mielőtt kódolsz):** struct → mapping → modifier → event → require → visibility (public/external/view). A Solidity dokumentáció "Structure of a Contract" fejezete elég.
 
 ### 2.1 Adatmodell
-- [ ] **2.1.1 –** `Event` struct: `name`, `description`, `startTime`, `organizer`, `active`.
-- [ ] **2.1.2 –** `uint256 public eventCounter;` (auto eventId).
-- [ ] **2.1.3 –** `mapping(uint256 => Event) public events;`
-- [ ] **2.1.4 –** `mapping(uint256 => mapping(address => bool)) public invited;`
-- [ ] **2.1.5 –** `mapping(uint256 => mapping(address => bool)) public checkedIn;`
-- [ ] **2.1.6 –** `mapping(uint256 => mapping(address => bool)) public scannerAllowed;`
+- [x] **2.1.1 –** `Event` struct: `name`, `description`, `startTime`, `organizer`, `active`.
+- [x] **2.1.2 –** `uint256 public eventCounter;` (auto eventId).
+- [x] **2.1.3 –** `mapping(uint256 => Event) public events;`
+- [x] **2.1.4 –** `mapping(uint256 => mapping(address => bool)) public invited;`
+- [x] **2.1.5 –** `mapping(uint256 => mapping(address => bool)) public checkedIn;`
+- [x] **2.1.6 –** `mapping(uint256 => mapping(address => bool)) public scannerAllowed;`
 
 ### 2.2 Eventek (logok)
-- [ ] **2.2.1 –** `EventCreated(uint256 eventId, address organizer, string name, uint256 startTime)`
-- [ ] **2.2.2 –** `GuestInvited(uint256 eventId, address guest)`
-- [ ] **2.2.3 –** `ScannerUpdated(uint256 eventId, address scanner, bool allowed)`
-- [ ] **2.2.4 –** `GuestCheckedIn(uint256 eventId, address guest, address scanner, uint256 timestamp)`
+- [x] **2.2.1 –** `EventCreated(uint256 eventId, address organizer, string name, uint256 startTime)`
+- [x] **2.2.2 –** `GuestInvited(uint256 eventId, address guest)`
+- [x] **2.2.3 –** `ScannerUpdated(uint256 eventId, address scanner, bool allowed)`
+- [x] **2.2.4 –** `GuestCheckedIn(uint256 eventId, address guest, address scanner, uint256 timestamp)`
 
 🧠 *Event/log:* a szerződés "üzenőfala". Olcsó, és a frontend ebből tudja gyorsan kilistázni, mi történt.
 
 ### 2.3 Függvények
-- [ ] **2.3.1 – `createEvent(name, description, startTime)`** → új esemény, `eventCounter++`, `EventCreated` emit. Bárki hívhatja (ő lesz az organizer = `msg.sender`).
-- [ ] **2.3.2 – `inviteGuest(eventId, guest)`** → csak az esemény organizere. `invited[eventId][guest] = true`, `GuestInvited` emit.
-- [ ] **2.3.3 – `inviteMany(eventId, guests[])`** → ciklus az `inviteGuest` logikán. ⚠️ csak kis listára (gas!).
-- [ ] **2.3.4 – `setScanner(eventId, scanner, allowed)`** → csak organizer. `ScannerUpdated` emit.
-- [ ] **2.3.5 – `checkIn(eventId, guest)`** → organizer **vagy** engedélyezett scanner hívhatja. Feltételek: meghívott ✔ + még nincs `checkedIn` ✔. Sikerkor `checkedIn=true`, `GuestCheckedIn` emit.
-- [ ] **2.3.6 – `isValidInvite(eventId, guest)` `view`** → `invited && !checkedIn`. Publikus, ingyenes olvasás.
-- [ ] **2.3.7 – `getEvent(eventId)` `view`** → esemény adatok.
+- [x] **2.3.1 – `createEvent(name, description, startTime)`** → új esemény, `eventCounter++`, `EventCreated` emit. Bárki hívhatja (ő lesz az organizer = `msg.sender`).
+- [x] **2.3.2 – `inviteGuest(eventId, guest)`** → csak az esemény organizere. `invited[eventId][guest] = true`, `GuestInvited` emit.
+- [x] **2.3.3 – `inviteMany(eventId, guests[])`** → ciklus az `inviteGuest` logikán. ⚠️ csak kis listára (gas!).
+- [x] **2.3.4 – `setScanner(eventId, scanner, allowed)`** → csak organizer. `ScannerUpdated` emit.
+- [x] **2.3.5 – `checkIn(eventId, guest)`** → organizer **vagy** engedélyezett scanner hívhatja. Feltételek: meghívott ✔ + még nincs `checkedIn` ✔. Sikerkor `checkedIn=true`, `GuestCheckedIn` emit.
+- [x] **2.3.6 – `isValidInvite(eventId, guest)` `view`** → `invited && !checkedIn`. Publikus, ingyenes olvasás.
+- [x] **2.3.7 – `getEvent(eventId)` `view`** → esemény adatok.
 
 ### 2.4 Jogosultság-őrök
-- [ ] **2.4.1 –** `onlyOrganizer(eventId)` modifier vagy `require(msg.sender == events[eventId].organizer, "not organizer")`.
-- [ ] **2.4.2 –** check-in jogosultság: `require(msg.sender == organizer || scannerAllowed[eventId][msg.sender], "not allowed")`.
-- [ ] **2.4.3 –** beszédes `require` hibaüzenetek mindenhol.
+- [x] **2.4.1 –** `onlyOrganizer(eventId)` modifier vagy `require(msg.sender == events[eventId].organizer, "not organizer")`.
+- [x] **2.4.2 –** check-in jogosultság: `require(msg.sender == organizer || scannerAllowed[eventId][msg.sender], "not allowed")`.
+- [x] **2.4.3 –** beszédes `require` hibaüzenetek mindenhol.
 
-- [ ] **2.5 – `npx hardhat compile` zöld · commit:** `feat: ChainInvite contract MVP`.
+- [ ] **2.5 – `npx hardhat compile` zöld · commit:** `feat: ChainInvite contract MVP`. *(Részben kész: compile zöld; commit még nincs.)*
 
 ⚠️ **Kezdő-buktatók:** `msg.sender` mindig a hívó címe – ezzel csinálod a jogosultságot. · A `mapping`-et nem lehet végigiterálni → listázáshoz az eventeket/logokat használd. · A `startTime`-ot UNIX timestampként (másodperc) tárold.
 
@@ -129,17 +129,17 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** legalább 10 teszt, a happy path ÉS a hibás esetek lefedve. Itt jössz rá, tényleg jól véded-e a logikát.
 
-- [ ] **3.1 –** Teszt-keret a `test/ChainInvite.test.ts`-ben (Hardhat alapból ad mintát).
-- [ ] **3.2 –** ✅ Esemény létrehozása működik, `eventCounter` nő, `EventCreated` emittál.
-- [ ] **3.3 –** ✅ Organizer meg tud hívni vendéget.
-- [ ] **3.4 –** ❌ NEM-organizer **nem** hívhat meg (revert).
-- [ ] **3.5 –** ❌ Nem meghívott wallet **nem** check-inelhető (revert).
-- [ ] **3.6 –** ✅ Meghívott vendég check-inelhető, `GuestCheckedIn` emittál.
-- [ ] **3.7 –** ❌ Ugyanaz a vendég **másodszor** nem check-inelhető (revert) – ez az "egyszer használatos" lényege.
-- [ ] **3.8 –** ✅ Engedélyezett scanner tud check-int indítani.
-- [ ] **3.9 –** ❌ Tiltott/idegen cím **nem** tud check-int indítani (revert).
-- [ ] **3.10 –** ✅ `isValidInvite` helyes értéket ad check-in előtt/után.
-- [ ] **3.11 – Futtatás:** `npx hardhat test` – minden zöld.
+- [x] **3.1 –** Teszt-keret a `test/ChainInvite.test.ts`-ben (Hardhat alapból ad mintát).
+- [x] **3.2 –** ✅ Esemény létrehozása működik, `eventCounter` nő, `EventCreated` emittál.
+- [x] **3.3 –** ✅ Organizer meg tud hívni vendéget.
+- [x] **3.4 –** ❌ NEM-organizer **nem** hívhat meg (revert).
+- [x] **3.5 –** ❌ Nem meghívott wallet **nem** check-inelhető (revert).
+- [x] **3.6 –** ✅ Meghívott vendég check-inelhető, `GuestCheckedIn` emittál.
+- [x] **3.7 –** ❌ Ugyanaz a vendég **másodszor** nem check-inelhető (revert) – ez az "egyszer használatos" lényege.
+- [x] **3.8 –** ✅ Engedélyezett scanner tud check-int indítani.
+- [x] **3.9 –** ❌ Tiltott/idegen cím **nem** tud check-int indítani (revert).
+- [x] **3.10 –** ✅ `isValidInvite` helyes értéket ad check-in előtt/után.
+- [x] **3.11 – Futtatás:** `npx hardhat test` – minden zöld.
 - [ ] **3.12 – Commit:** `test: contract unit tests`.
 
 🧠 *Unit teszt:* kis automata próba, ami egy-egy szabályt ellenőriz. A "revert" = a szerződés szándékosan elutasít egy tiltott műveletet – ezt teszteled.
