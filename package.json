@@ -1,0 +1,35 @@
+{
+  "name": "chainivite",
+  "version": "1.0.0",
+  "description": "Blockchain-alapu esemenymeghivo es QR check-in dApp.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/captaaint/chainivite.git"
+  },
+  "keywords": [
+    "ethereum",
+    "hardhat",
+    "solidity",
+    "dapp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/captaaint/chainivite/issues"
+  },
+  "homepage": "https://github.com/captaaint/chainivite#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
+    "@types/node": "^26.0.0",
+    "hardhat": "^3.9.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

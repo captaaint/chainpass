@@ -1,0 +1,295 @@
+# ChainInvite – Megvalósítási terv (task-bontás)
+
+> Blockchain-alapú eseménymeghívó + QR check-in dApp.
+> Ez a fájl a [megvalósítási terv PDF](../chaininvite/chaininvite_megvalositasi_terv.pdf) gyakorlati, kipipálható lebontása.
+> Kezdő blockchain-fejlesztőnek. Minden taskhoz tartozik: **mit csinálsz**, **konkrét parancs/kód**, és **kész, ha…** kritérium.
+
+**Stack:** Solidity 0.8.x · Hardhat 3 · Next.js + TypeScript · wagmi + viem · Sepolia testnet
+**Munkamenet javaslat:** felülről lefelé haladj, ne ugorj. Minden szakasz végén commitolj.
+
+---
+
+## Hogyan használd ezt a fájlt
+
+- A `[ ]` jelölést írd át `[x]`-re, ha kész egy task.
+- A 🧠 ikonnál van **fogalom-magyarázat** – ha még új a téma, ezt olvasd el először.
+- A ⚠️ ikon **kezdő-buktatókat** jelöl.
+- Egy szakasz akkor "kész", ha a végén lévő **Szakasz-DoD** (Definition of Done) minden pontja teljesül.
+
+---
+
+## 0. szakasz – Előkészítés és eszközök (≈ 0,5 nap)
+
+**Cél:** működő, üres projektváz; minden eszköz telepítve.
+
+- [x] **0.1 – Node.js (LTS) telepítése.** Ellenőrzés: `node -v` (≥ 20) és `npm -v` fusson le.
+- [x] **0.2 – Kódszerkesztő + bővítmények.** VS Code + a "Solidity" (Nomic Foundation) és "Prettier" bővítmények.
+- [ ] **0.3 – MetaMask wallet telepítése** (böngésző-bővítmény). Hozz létre egy **külön, csak tesztre szánt** walletet.
+  - ⚠️ Soha ne tedd ebbe valódi pénzt, és a *seed phrase*-t soha ne másold be kódba/fájlba.
+- [ ] **0.4 – Sepolia teszt-ETH szerzése** egy faucet-ről (pl. a wallet hálózatát Sepolia-ra állítva). Erre a deployhoz lesz szükség.
+- [ ] **0.5 – Ingyenes RPC-kulcs** beszerzése (Alchemy vagy Infura), Sepolia hálózathoz. Mentsd el az RPC URL-t.
+- [ ] **0.6 – Git repo rendberakása.** Ez a mappa már git repo. Hozz létre egy `.gitignore`-t (lásd lent) és csinálj első commitot. *(Részben kész: `.gitignore` létrehozva; első commit még nincs.)*
+
+🧠 **Fogalmak:**
+- *Testnet (Sepolia):* "éles" Ethereum-másolat, de a rajta lévő ETH értéktelen → ingyen kísérletezhetsz.
+- *RPC URL:* az a végpont, amin keresztül a kódod beszél a blockchainnel.
+- *Faucet:* ingyenes teszt-ETH osztó oldal.
+
+**`.gitignore` (másold be):**
+```
+node_modules
+.env
+.env.local
+artifacts
+cache
+typechain-types
+web/.next
+web/node_modules
+```
+
+**Szakasz-DoD:** `node -v` működik · van tesztwallet Sepolia ETH-vel · van RPC URL · van `.gitignore` + első commit.
+
+---
+
+## 1. szakasz – Hardhat projekt + üres contract (≈ 0,5 nap)
+
+**Cél:** lefordul egy üres Solidity szerződés, fut a lokális teszt.
+
+- [x] **1.1 – Hardhat init a repo gyökerében.**
+  ```bash
+  npm init -y
+  npm install --save-dev hardhat
+  npx hardhat init   # válaszd a TypeScript projektet
+  ```
+- [x] **1.2 – Mappaszerkezet ellenőrzése:** legyen `contracts/`, `test/`, `scripts/`.
+- [x] **1.3 – Próba-fordítás.** `npx hardhat compile` hibamentesen fusson.
+- [x] **1.4 – Üres `contracts/ChainInvite.sol` létrehozása** SPDX licenc + pragma sorral:
+  ```solidity
+  // SPDX-License-Identifier: MIT
+  pragma solidity ^0.8.24;
+
+  contract ChainInvite {
+      // ide jön a logika a 2. szakaszban
+  }
+  ```
+- [ ] **1.5 – Commit:** `chore: hardhat scaffold`.
+
+🧠 **Fogalmak:** *Hardhat* = a Solidity "fejlesztői svájcibicska" (fordítás, teszt, lokális blockchain, deploy egy helyen).
+
+**Szakasz-DoD:** `npx hardhat compile` zöld · van `ChainInvite.sol` · commit kész.
+
+---
+
+## 2. szakasz – Smart contract logika (≈ 2–3 nap)
+
+**Cél:** a teljes MVP-contract megírva, fordul.
+Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`, jogosultság (`require`).
+
+🧠 **Tanulási mini-sorrend (mielőtt kódolsz):** struct → mapping → modifier → event → require → visibility (public/external/view). A Solidity dokumentáció "Structure of a Contract" fejezete elég.
+
+### 2.1 Adatmodell
+- [ ] **2.1.1 –** `Event` struct: `name`, `description`, `startTime`, `organizer`, `active`.
+- [ ] **2.1.2 –** `uint256 public eventCounter;` (auto eventId).
+- [ ] **2.1.3 –** `mapping(uint256 => Event) public events;`
+- [ ] **2.1.4 –** `mapping(uint256 => mapping(address => bool)) public invited;`
+- [ ] **2.1.5 –** `mapping(uint256 => mapping(address => bool)) public checkedIn;`
+- [ ] **2.1.6 –** `mapping(uint256 => mapping(address => bool)) public scannerAllowed;`
+
+### 2.2 Eventek (logok)
+- [ ] **2.2.1 –** `EventCreated(uint256 eventId, address organizer, string name, uint256 startTime)`
+- [ ] **2.2.2 –** `GuestInvited(uint256 eventId, address guest)`
+- [ ] **2.2.3 –** `ScannerUpdated(uint256 eventId, address scanner, bool allowed)`
+- [ ] **2.2.4 –** `GuestCheckedIn(uint256 eventId, address guest, address scanner, uint256 timestamp)`
+
+🧠 *Event/log:* a szerződés "üzenőfala". Olcsó, és a frontend ebből tudja gyorsan kilistázni, mi történt.
+
+### 2.3 Függvények
+- [ ] **2.3.1 – `createEvent(name, description, startTime)`** → új esemény, `eventCounter++`, `EventCreated` emit. Bárki hívhatja (ő lesz az organizer = `msg.sender`).
+- [ ] **2.3.2 – `inviteGuest(eventId, guest)`** → csak az esemény organizere. `invited[eventId][guest] = true`, `GuestInvited` emit.
+- [ ] **2.3.3 – `inviteMany(eventId, guests[])`** → ciklus az `inviteGuest` logikán. ⚠️ csak kis listára (gas!).
+- [ ] **2.3.4 – `setScanner(eventId, scanner, allowed)`** → csak organizer. `ScannerUpdated` emit.
+- [ ] **2.3.5 – `checkIn(eventId, guest)`** → organizer **vagy** engedélyezett scanner hívhatja. Feltételek: meghívott ✔ + még nincs `checkedIn` ✔. Sikerkor `checkedIn=true`, `GuestCheckedIn` emit.
+- [ ] **2.3.6 – `isValidInvite(eventId, guest)` `view`** → `invited && !checkedIn`. Publikus, ingyenes olvasás.
+- [ ] **2.3.7 – `getEvent(eventId)` `view`** → esemény adatok.
+
+### 2.4 Jogosultság-őrök
+- [ ] **2.4.1 –** `onlyOrganizer(eventId)` modifier vagy `require(msg.sender == events[eventId].organizer, "not organizer")`.
+- [ ] **2.4.2 –** check-in jogosultság: `require(msg.sender == organizer || scannerAllowed[eventId][msg.sender], "not allowed")`.
+- [ ] **2.4.3 –** beszédes `require` hibaüzenetek mindenhol.
+
+- [ ] **2.5 – `npx hardhat compile` zöld · commit:** `feat: ChainInvite contract MVP`.
+
+⚠️ **Kezdő-buktatók:** `msg.sender` mindig a hívó címe – ezzel csinálod a jogosultságot. · A `mapping`-et nem lehet végigiterálni → listázáshoz az eventeket/logokat használd. · A `startTime`-ot UNIX timestampként (másodperc) tárold.
+
+**Szakasz-DoD:** minden függvény + event + jogosultság megírva · fordul · commit kész.
+
+---
+
+## 3. szakasz – Unit tesztek (≈ 1–2 nap)
+
+**Cél:** legalább 10 teszt, a happy path ÉS a hibás esetek lefedve. Itt jössz rá, tényleg jól véded-e a logikát.
+
+- [ ] **3.1 –** Teszt-keret a `test/ChainInvite.test.ts`-ben (Hardhat alapból ad mintát).
+- [ ] **3.2 –** ✅ Esemény létrehozása működik, `eventCounter` nő, `EventCreated` emittál.
+- [ ] **3.3 –** ✅ Organizer meg tud hívni vendéget.
+- [ ] **3.4 –** ❌ NEM-organizer **nem** hívhat meg (revert).
+- [ ] **3.5 –** ❌ Nem meghívott wallet **nem** check-inelhető (revert).
+- [ ] **3.6 –** ✅ Meghívott vendég check-inelhető, `GuestCheckedIn` emittál.
+- [ ] **3.7 –** ❌ Ugyanaz a vendég **másodszor** nem check-inelhető (revert) – ez az "egyszer használatos" lényege.
+- [ ] **3.8 –** ✅ Engedélyezett scanner tud check-int indítani.
+- [ ] **3.9 –** ❌ Tiltott/idegen cím **nem** tud check-int indítani (revert).
+- [ ] **3.10 –** ✅ `isValidInvite` helyes értéket ad check-in előtt/után.
+- [ ] **3.11 – Futtatás:** `npx hardhat test` – minden zöld.
+- [ ] **3.12 – Commit:** `test: contract unit tests`.
+
+🧠 *Unit teszt:* kis automata próba, ami egy-egy szabályt ellenőriz. A "revert" = a szerződés szándékosan elutasít egy tiltott műveletet – ezt teszteled.
+
+**Szakasz-DoD:** ≥ 10 teszt, mind zöld · commit kész.
+
+---
+
+## 4. szakasz – Deploy Sepolia testnetre (≈ 0,5–1 nap)
+
+**Cél:** a contract publikusan él egy valódi teszthálózaton, megvan a címe.
+
+- [ ] **4.1 – `.env` létrehozása** (NEM kerül gitbe!): `SEPOLIA_RPC_URL=...` és `PRIVATE_KEY=...` (a tesztwallet privát kulcsa). *(Előkészítve: `.env.example` létrehozva.)*
+  - ⚠️ Csak a **tesztwallet** kulcsát! Ellenőrizd, hogy a `.env` benne van a `.gitignore`-ban.
+- [x] **4.2 – Hardhat config** kiegészítése a Sepolia hálózattal (RPC URL + account a `.env`-ből).
+- [x] **4.3 – `scripts/deploy.ts`** megírása (contract deploy + a cím kiírása konzolra).
+- [ ] **4.4 – Deploy futtatása** Sepolia-ra. Másold ki a kapott **contract address**-t.
+- [ ] **4.5 – Ellenőrzés** a [sepolia.etherscan.io](https://sepolia.etherscan.io) oldalon: keresd rá a címre, lásd a deploy tranzakciót.
+- [ ] **4.6 –** Mentsd a contract címet egy `web/.env.local`-ba (frontendhez) és a README-be.
+- [ ] **4.7 – Commit:** `chore: deploy script + sepolia config`.
+
+🧠 *Deploy:* a lefordított contractot feltöltöd a hálózatra; onnantól egy **címen** él, és bárki hívhatja.
+
+**Szakasz-DoD:** contract él Sepolián · van címe · látszik Etherscanon · cím elmentve.
+
+---
+
+## 5. szakasz – Frontend váz + wallet connect (≈ 1 nap)
+
+**Cél:** fut a Next.js app, csatlakozik a wallet, olvas a contractról.
+
+- [ ] **5.1 – Next.js app** a `web/` mappában: `npx create-next-app@latest web` (TypeScript + App Router + Tailwind igen).
+- [ ] **5.2 – Függőségek:** `npm install wagmi viem @tanstack/react-query`.
+- [ ] **5.3 – wagmi konfiguráció** Sepolia chainnel + provider beágyazása a layoutba.
+- [ ] **5.4 – "Connect Wallet" gomb** – csatlakozás MetaMaskkal, csatlakozott cím kijelzése.
+- [ ] **5.5 – Hálózat-ellenőrzés:** ha nem Sepolián van a user, jelezzen a UI + "switch network" gomb.
+- [ ] **5.6 – Contract ABI + cím** bekötése (`web/lib/contract.ts`). Az ABI-t a Hardhat `artifacts/`-ból másold.
+- [ ] **5.7 – Olvasás teszt:** jelenítsd meg az `eventCounter`-t a főoldalon (read-only hívás).
+- [ ] **5.8 – Commit:** `feat: web scaffold + wallet connect`.
+
+🧠 *ABI:* a contract "használati utasítása" JSON-ban – ebből tudja a frontend, milyen függvényeket hívhat. · *wagmi/viem:* TS könyvtárak, amik elintézik a wallet- és contract-kommunikációt.
+
+⚠️ *Read vs. Write:* az olvasás (`view`) ingyenes és azonnali; az írás (state-változás) tranzakció → gas + várakozás + MetaMask-jóváhagyás.
+
+**Szakasz-DoD:** app fut · wallet csatlakozik · rossz hálózatot jelez · `eventCounter` látszik.
+
+---
+
+## 6. szakasz – Admin (szervezői) felület (≈ 2 nap)
+
+**Cél:** a szervező eseményt hoz létre és meghív vendégeket – böngészőből.
+
+- [ ] **6.1 – `/admin`** oldal: a csatlakozott wallethez tartozó események listája (a `EventCreated` logokból szűrve organizerre).
+- [ ] **6.2 – `/admin/events/new`** űrlap: név, leírás, kezdési idő → `createEvent` tranzakció.
+- [ ] **6.3 – Tranzakció-állapotok kezelése:** pending / success / error visszajelzés a UI-n (ne fagyjon meg a gomb).
+- [ ] **6.4 – `/admin/events/[id]`** esemény-részletek: adatok + meghívottak listája.
+- [ ] **6.5 – Invite form** ezen az oldalon: wallet cím → `inviteGuest`. (Opcionális: több cím → `inviteMany`.)
+- [ ] **6.6 – Scanner-kezelés:** scanner cím hozzáadása/tiltása → `setScanner`.
+- [ ] **6.7 – Check-in státusz** oszlop a meghívottaknál (a `checkedIn` mappingből / `GuestCheckedIn` logokból).
+- [ ] **6.8 – Commit:** `feat: admin dashboard`.
+
+⚠️ Cím-validáció: ellenőrizd, hogy a beírt vendégcím valódi formátumú (viem `isAddress`), különben a tranzakció elszáll.
+
+**Szakasz-DoD:** új esemény létrehozható UI-ból · vendég meghívható · check-in státusz látszik · tranzakció-állapotok visszajeleznek.
+
+---
+
+## 7. szakasz – Vendég meghívó oldal + QR generálás (≈ 1–2 nap)
+
+**Cél:** a vendég megnyitja a saját meghívóját és kap egy QR-kódot.
+
+- [ ] **7.1 – QR könyvtár:** `npm install qrcode` (+ típusok).
+- [ ] **7.2 – `/invite/[eventId]`** oldal: wallet connect + esemény-alapadatok kijelzése.
+- [ ] **7.3 – Meghívó-ellenőrzés:** `isValidInvite(eventId, csatlakozott_cím)` hívása; ha érvényes, mutasd a QR-t, ha nem, magyarázó üzenet.
+- [ ] **7.4 – QR-kód generálás** a payloadból: `{ "eventId": <id>, "guest": "0x..." }`.
+- [ ] **7.5 – Állapot-jelzés:** "Érvényes meghívó" / "Már felhasznált" / "Nincs meghívód".
+- [ ] **7.6 – Commit:** `feat: guest invite page + QR`.
+
+🧠 *Miért JSON a QR-ben?* A scanner ezt olvassa be, és ebből tudja, melyik eseményre + melyik címre kell a check-int indítani.
+
+**Szakasz-DoD:** vendég látja a meghívóját · érvényes meghívónál QR jelenik meg · állapotok helyesek.
+
+---
+
+## 8. szakasz – Scanner (beléptető) oldal (≈ 2–3 nap)
+
+**Cél:** a helyszíni eszköz beolvassa a QR-t és on-chain check-ineli a vendéget. Ez a projekt látványos csúcspontja.
+
+- [ ] **8.1 – QR-olvasó könyvtár:** `npm install html5-qrcode` (vagy `@zxing/browser`).
+- [ ] **8.2 – `/scanner/[eventId]`** oldal: wallet connect (a scanner saját engedélyezett címével) + kamera-előnézet.
+- [ ] **8.3 – QR dekódolás:** beolvasott szöveg → JSON parse → `eventId` + `guest` kinyerése. ⚠️ try/catch hibás QR-re.
+- [ ] **8.4 – Validáció check-in előtt:** `isValidInvite` hívás; ha érvénytelen, **ne** indíts tranzakciót, mutass hibát.
+- [ ] **8.5 – Check-in tranzakció:** `checkIn(eventId, guest)` küldése; pending/success/error állapot kijelzése nagyban, jól láthatóan.
+- [ ] **8.6 – Egyszer-használatosság a gyakorlatban:** ugyanazt a QR-t másodszor beolvasva piros "Már felhasznált" üzenet jöjjön (a contract revertel, a UI ezt szépen kezeli).
+- [ ] **8.7 – Commit:** `feat: scanner page + check-in flow`.
+
+⚠️ A kamera **HTTPS-t (vagy localhostot)** igényel a böngészőben. Telefonos teszthez vagy deployolt HTTPS-oldal, vagy localhost kell.
+
+**Szakasz-DoD:** kamera olvas · hibás QR nem indít tranzakciót · érvényes QR sikeres check-int csinál · második olvasás "felhasznált"-at jelez.
+
+---
+
+## 9. szakasz – Polish, README, demó (≈ 1–2 nap)
+
+**Cél:** portfólióképes, bemutatható verzió.
+
+- [ ] **9.1 – Loading- és üres állapotok:** spinner tranzakció közben, értelmes üzenet üres eseménylistára.
+- [ ] **9.2 – Hibakezelés:** elutasított tranzakció, rossz hálózat, nem csatlakozott wallet – mind barátságos üzenet.
+- [ ] **9.3 – Demó-adatok:** hozz létre 1–2 mintaeseményt + pár meghívót a bemutatóhoz.
+- [ ] **9.4 – README.md megírása:** projekt célja · stack · telepítés lépésről lépésre · `.env` változók · deployolt contract cím · demó-lépések (organizer → invite → guest QR → scanner check-in).
+- [ ] **9.5 – Képernyőképek vagy rövid demó-videó** a README-be / portfólióba.
+- [ ] **9.6 – Frontend deploy** (pl. Vercel) – hogy a kamerás scanner HTTPS-en menjen és linkelhető legyen.
+- [ ] **9.7 – Végső commit + tag:** `release: ChainInvite v1`.
+
+**Szakasz-DoD = Projekt Definition of Done:**
+- [ ] Contract lokálisan tesztelve (happy path + hibás esetek).
+- [ ] Contract Sepolián deployolva.
+- [ ] Admin tud eseményt létrehozni és vendéget meghívni.
+- [ ] Vendég látja a meghívót és QR-t kap.
+- [ ] Scanner beolvas és sikeresen check-inel.
+- [ ] Második beolvasás "felhasznált"-at jelez.
+- [ ] README teljes (cél, telepítés, env, deploy cím, demó-lépések).
+
+---
+
+## Gyors referencia – parancsok
+
+```bash
+# Contract
+npx hardhat compile           # fordítás
+npx hardhat test              # unit tesztek
+npx hardhat run scripts/deploy.ts --network sepolia   # deploy
+
+# Frontend (web/ mappából)
+npm run dev                   # fejlesztői szerver
+npm run build                 # production build
+```
+
+## Hivatalos dokumentációk
+- Ethereum fejlesztőknek: https://ethereum.org/developers/docs/
+- Solidity: https://docs.soliditylang.org/
+- Hardhat: https://hardhat.org/docs/getting-started
+- viem: https://viem.sh/docs/getting-started
+- wagmi: https://wagmi.sh/
+
+---
+
+## Tippek kezdőként
+- **Egyszerre egy szakasz.** Ne kezdj frontendet, amíg a contract + tesztek nincsenek zölden.
+- **Commitolj sűrűn**, szakaszonként legalább egyszer – így bármikor visszaléphetsz.
+- **Először mindig olvasás, utána írás.** Ha az olvasás (`view`) megy a UI-ban, az írás (tranzakció) már csak egy lépés.
+- **NFT-t ne most.** A PDF terv szerint az NFT/soulbound változat V2/V3 – előbb tanuld meg az állapotkezelést.
+- **A privát kulcs / seed szent.** Csak tesztwallet, soha ne gitbe, soha ne valódi pénzzel.
