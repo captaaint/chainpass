@@ -140,7 +140,7 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 - [x] **3.9 –** ❌ Tiltott/idegen cím **nem** tud check-int indítani (revert).
 - [x] **3.10 –** ✅ `isValidInvite` helyes értéket ad check-in előtt/után.
 - [x] **3.11 – Futtatás:** `npx hardhat test` – minden zöld.
-- [ ] **3.12 – Commit:** `test: contract unit tests`.
+- [x] **3.12 – Commit:** `test: contract unit tests`.
 
 🧠 *Unit teszt:* kis automata próba, ami egy-egy szabályt ellenőriz. A "revert" = a szerződés szándékosan elutasít egy tiltott műveletet – ezt teszteled.
 
