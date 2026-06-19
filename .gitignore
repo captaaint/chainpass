@@ -2,6 +2,7 @@ node_modules
 .env
 .env.local
 *.map
+.playwright-mcp
 artifacts
 cache
 typechain-types

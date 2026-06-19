@@ -171,13 +171,13 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** fut a Next.js app, csatlakozik a wallet, olvas a contractról.
 
-- [ ] **5.1 – Next.js app** a `web/` mappában: `npx create-next-app@latest web` (TypeScript + App Router + Tailwind igen).
-- [ ] **5.2 – Függőségek:** `npm install wagmi viem @tanstack/react-query`.
-- [ ] **5.3 – wagmi konfiguráció** Sepolia chainnel + provider beágyazása a layoutba.
-- [ ] **5.4 – "Connect Wallet" gomb** – csatlakozás MetaMaskkal, csatlakozott cím kijelzése.
-- [ ] **5.5 – Hálózat-ellenőrzés:** ha nem Sepolián van a user, jelezzen a UI + "switch network" gomb.
-- [ ] **5.6 – Contract ABI + cím** bekötése (`web/lib/contract.ts`). Az ABI-t a Hardhat `artifacts/`-ból másold.
-- [ ] **5.7 – Olvasás teszt:** jelenítsd meg az `eventCounter`-t a főoldalon (read-only hívás).
+- [x] **5.1 – Next.js app** a `web/` mappában: `npx create-next-app@latest web` (TypeScript + App Router + Tailwind igen).
+- [x] **5.2 – Függőségek:** `npm install wagmi viem @tanstack/react-query`.
+- [x] **5.3 – wagmi konfiguráció** Sepolia chainnel + provider beágyazása a layoutba.
+- [x] **5.4 – "Connect Wallet" gomb** – csatlakozás MetaMaskkal, csatlakozott cím kijelzése.
+- [x] **5.5 – Hálózat-ellenőrzés:** ha nem Sepolián van a user, jelezzen a UI + "switch network" gomb.
+- [x] **5.6 – Contract ABI + cím** bekötése (`web/lib/contract.ts`). Az ABI-t a Hardhat `artifacts/`-ból másold.
+- [x] **5.7 – Olvasás teszt:** jelenítsd meg az `eventCounter`-t a főoldalon (read-only hívás).
 - [ ] **5.8 – Commit:** `feat: web scaffold + wallet connect`.
 
 🧠 *ABI:* a contract "használati utasítása" JSON-ban – ebből tudja a frontend, milyen függvényeket hívhat. · *wagmi/viem:* TS könyvtárak, amik elintézik a wallet- és contract-kommunikációt.
