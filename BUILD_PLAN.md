@@ -152,14 +152,14 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** a contract publikusan él egy valódi teszthálózaton, megvan a címe.
 
-- [ ] **4.1 – `.env` létrehozása** (NEM kerül gitbe!): `SEPOLIA_RPC_URL=...` és `PRIVATE_KEY=...` (a tesztwallet privát kulcsa). *(Előkészítve: `.env.example` létrehozva.)*
+- [x] **4.1 – `.env` létrehozása** (NEM kerül gitbe!): `SEPOLIA_RPC_URL=...` és `PRIVATE_KEY=...` (a tesztwallet privát kulcsa).
   - ⚠️ Csak a **tesztwallet** kulcsát! Ellenőrizd, hogy a `.env` benne van a `.gitignore`-ban.
 - [x] **4.2 – Hardhat config** kiegészítése a Sepolia hálózattal (RPC URL + account a `.env`-ből).
 - [x] **4.3 – `scripts/deploy.ts`** megírása (contract deploy + a cím kiírása konzolra).
-- [ ] **4.4 – Deploy futtatása** Sepolia-ra. Másold ki a kapott **contract address**-t.
-- [ ] **4.5 – Ellenőrzés** a [sepolia.etherscan.io](https://sepolia.etherscan.io) oldalon: keresd rá a címre, lásd a deploy tranzakciót.
-- [ ] **4.6 –** Mentsd a contract címet egy `web/.env.local`-ba (frontendhez) és a README-be.
-- [ ] **4.7 – Commit:** `chore: deploy script + sepolia config`.
+- [x] **4.4 – Deploy futtatása** Sepolia-ra. Másold ki a kapott **contract address**-t.
+- [x] **4.5 – Ellenőrzés** a [sepolia.etherscan.io](https://sepolia.etherscan.io) oldalon: keresd rá a címre, lásd a deploy tranzakciót.
+- [x] **4.6 –** Mentsd a contract címet egy `web/.env.local`-ba (frontendhez) és a README-be.
+- [x] **4.7 – Commit:** `chore: deploy script + sepolia config`.
 
 🧠 *Deploy:* a lefordított contractot feltöltöd a hálózatra; onnantól egy **címen** él, és bárki hívhatja.
 
