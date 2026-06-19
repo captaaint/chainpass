@@ -228,12 +228,12 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** a helyszíni eszköz beolvassa a QR-t és on-chain check-ineli a vendéget. Ez a projekt látványos csúcspontja.
 
-- [ ] **8.1 – QR-olvasó könyvtár:** `npm install html5-qrcode` (vagy `@zxing/browser`).
-- [ ] **8.2 – `/scanner/[eventId]`** oldal: wallet connect (a scanner saját engedélyezett címével) + kamera-előnézet.
-- [ ] **8.3 – QR dekódolás:** beolvasott szöveg → JSON parse → `eventId` + `guest` kinyerése. ⚠️ try/catch hibás QR-re.
-- [ ] **8.4 – Validáció check-in előtt:** `isValidInvite` hívás; ha érvénytelen, **ne** indíts tranzakciót, mutass hibát.
-- [ ] **8.5 – Check-in tranzakció:** `checkIn(eventId, guest)` küldése; pending/success/error állapot kijelzése nagyban, jól láthatóan.
-- [ ] **8.6 – Egyszer-használatosság a gyakorlatban:** ugyanazt a QR-t másodszor beolvasva piros "Már felhasznált" üzenet jöjjön (a contract revertel, a UI ezt szépen kezeli).
+- [x] **8.1 – QR-olvasó könyvtár:** `npm install html5-qrcode` (vagy `@zxing/browser`).
+- [x] **8.2 – `/scanner/[eventId]`** oldal: wallet connect (a scanner saját engedélyezett címével) + kamera-előnézet.
+- [x] **8.3 – QR dekódolás:** beolvasott szöveg → JSON parse → `eventId` + `guest` kinyerése. ⚠️ try/catch hibás QR-re.
+- [x] **8.4 – Validáció check-in előtt:** `isValidInvite` hívás; ha érvénytelen, **ne** indíts tranzakciót, mutass hibát.
+- [x] **8.5 – Check-in tranzakció:** `checkIn(eventId, guest)` küldése; pending/success/error állapot kijelzése nagyban, jól láthatóan.
+- [ ] **8.6 – Egyszer-használatosság a gyakorlatban:** ugyanazt a QR-t másodszor beolvasva piros "Már felhasznált" üzenet jöjjön (a contract revertel, a UI ezt szépen kezeli). *(UI kezeli az érvénytelen/felhasznált állapotot; valós QR + MetaMask check-in után ellenőrizendő.)*
 - [ ] **8.7 – Commit:** `feat: scanner page + check-in flow`.
 
 ⚠️ A kamera **HTTPS-t (vagy localhostot)** igényel a böngészőben. Telefonos teszthez vagy deployolt HTTPS-oldal, vagy localhost kell.
