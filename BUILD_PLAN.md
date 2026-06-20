@@ -325,7 +325,7 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 - [x] **10.7.2 – ABI + cím frissítése** a frontenden (`web/lib/contract-nft.ts`). ⚠️ contract-változás után mindig új ABI!
 - [x] **10.7.3 – Vendégoldal:** mutassa, hogy a meghívó már egy birtokolt NFT (tokenId), a QR payload kapjon `tokenId`-t is.
 - [x] **10.7.4 – Scanner:** a `checkIn` a `tokenId` alapján menjen.
-- [x] **10.7.5 – (Bónusz)** "Nézd meg a walletedben / OpenSea testneten" link a vendégoldalon.
+- [x] **10.7.5 – (Bónusz)** "Nézd meg a walletedben / Etherscan Sepolián" link a vendégoldalon. *(OpenSea testnet támogatás megszűnt.)*
 
 - [ ] **10.8 – Commit:** `feat: ERC-721 NFT invites (V2)`.
 

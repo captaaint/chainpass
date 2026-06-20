@@ -36,7 +36,7 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
   - ERC-721 ticket minteles meghivaskor
   - QR payload `tokenId` mezovel
   - token tulajdonjog alapú check-in
-  - OpenSea testnet link a vendegoldalon
+  - Etherscan Sepolia token link a vendegoldalon
 - Rossz halozat kezeles Sepolia switch gombbal
 - Tranzakcio pending / success / error allapotok
 

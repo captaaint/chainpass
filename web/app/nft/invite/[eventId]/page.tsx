@@ -237,13 +237,13 @@ export default function InvitePage() {
                 </div>
                 {tokenId ? (
                   <a
-                    href={`https://testnets.opensea.io/assets/sepolia/${chainInviteNftAddress}/${tokenId.toString()}`}
+                    href={`https://sepolia.etherscan.io/token/${chainInviteNftAddress}?a=${tokenId.toString()}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
                   >
                     <ExternalLink size={16} aria-hidden="true" />
-                    View NFT
+                    View on Etherscan
                   </a>
                 ) : null}
               </div>
