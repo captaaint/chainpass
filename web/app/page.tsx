@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
   Copy,
   ExternalLink,
   RefreshCw,
+  Ticket,
 } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -23,6 +25,12 @@ import {
   chainInviteChainId,
   hasChainInviteAddress,
 } from "@/lib/contract";
+import {
+  chainInviteNftAbi,
+  chainInviteNftAddress,
+  chainInviteNftChainId,
+  hasChainInviteNftAddress,
+} from "@/lib/contract-nft";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -43,6 +51,21 @@ export default function Home() {
     chainId: chainInviteChainId,
     query: {
       enabled: hasChainInviteAddress,
+    },
+  });
+
+  const {
+    data: nftEventCounter,
+    error: nftEventCounterError,
+    isLoading: isNftEventCounterLoading,
+    refetch: refetchNft,
+  } = useReadContract({
+    address: chainInviteNftAddress,
+    abi: chainInviteNftAbi,
+    functionName: "eventCounter",
+    chainId: chainInviteNftChainId,
+    query: {
+      enabled: hasChainInviteNftAddress,
     },
   });
 
@@ -172,6 +195,63 @@ export default function Home() {
             <p className="mt-2 break-all text-sm text-[#5c6763]">
               {isConnected ? address : "No account selected"}
             </p>
+          </div>
+        </section>
+
+        <section className="grid min-w-0 gap-4 md:grid-cols-[1fr_0.85fr]">
+          <div className="min-w-0 rounded-md border border-[#d8d2c6] bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#5f6f52]">NFT V2</p>
+                <h2 className="mt-2 text-xl font-semibold">ERC-721 invite tickets</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-[#5c6763]">
+                  New events and check-ins here use token ownership and tokenId QR payloads.
+                </p>
+              </div>
+              <Ticket className="shrink-0 text-[#1d6f68]" size={24} aria-hidden="true" />
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                href="/nft/admin"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#1d6f68] px-4 text-sm font-semibold text-white transition hover:bg-[#15534e]"
+              >
+                <Ticket size={16} aria-hidden="true" />
+                NFT admin
+              </Link>
+              <a
+                href={`https://sepolia.etherscan.io/address/${chainInviteNftAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
+              >
+                <ExternalLink size={16} aria-hidden="true" />
+                NFT contract
+              </a>
+            </div>
+          </div>
+
+          <div className="min-w-0 rounded-md border border-[#d8d2c6] bg-white p-5">
+            <p className="text-sm font-semibold text-[#5f6f52]">NFT events</p>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="text-4xl font-semibold">
+                {isNftEventCounterLoading ? "..." : nftEventCounter?.toString() ?? "0"}
+              </span>
+              <span className="pb-1 text-sm text-[#5c6763]">on-chain</span>
+            </div>
+            {nftEventCounterError ? (
+              <p className="mt-3 text-sm leading-6 text-[#a53e2f]">
+                NFT contract read failed. Check the Sepolia RPC endpoint.
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => refetchNft()}
+              className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
+              title="Refresh NFT event count"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Refresh
+            </button>
           </div>
         </section>
       </div>

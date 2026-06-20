@@ -32,6 +32,11 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
   - QR JSON validalas
   - `isValidInvite` ellenorzes check-in elott
   - `checkIn` tranzakcio
+- NFT V2 flow `/nft/admin`, `/nft/invite/[eventId]`, `/nft/scanner/[eventId]` route-okon:
+  - ERC-721 ticket minteles meghivaskor
+  - QR payload `tokenId` mezovel
+  - token tulajdonjog alapú check-in
+  - OpenSea testnet link a vendegoldalon
 - Rossz halozat kezeles Sepolia switch gombbal
 - Tranzakcio pending / success / error allapotok
 
@@ -42,6 +47,14 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
 - Address: `0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b`
 - Deployment block: `11097427`
 - Etherscan: https://sepolia.etherscan.io/address/0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
+
+## Deployolt NFT Contract (V2)
+
+- Network: Sepolia
+- Chain ID: `11155111`
+- Address: `0x82a528a8214bb4a636352194f2a073e6696ca7cd`
+- Deployment block: `11100895`
+- Etherscan: https://sepolia.etherscan.io/address/0x82a528a8214bb4a636352194f2a073e6696ca7cd
 
 ## Demoadatok
 
@@ -102,6 +115,8 @@ Frontend `web/.env.local`:
 NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
 NEXT_PUBLIC_CHAIN_ID=11155111
 NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
+NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x82a528a8214bb4a636352194f2a073e6696ca7cd
+NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=11100895
 ```
 
 Ne commitolj privát kulcsot. A `PRIVATE_KEY` csak tesztwallet legyen.
