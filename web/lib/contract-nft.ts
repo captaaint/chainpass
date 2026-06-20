@@ -3,7 +3,7 @@ import { isAddress } from "viem";
 
 const nftContractAddress =
   process.env.NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS ??
-  "0x82a528a8214bb4a636352194f2a073e6696ca7cd";
+  "0x2993789b32cdbee343c3f2ee6371f39e824b6f61";
 
 if (nftContractAddress !== "" && !isAddress(nftContractAddress)) {
   throw new Error("Invalid NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS");
@@ -13,7 +13,7 @@ export const chainInviteNftAddress = nftContractAddress as Address;
 export const hasChainInviteNftAddress = nftContractAddress !== "";
 export const chainInviteNftChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "11155111");
 export const chainInviteNftDeploymentBlock = BigInt(
-  process.env.NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK ?? "11100895",
+  process.env.NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK ?? "11100949",
 );
 
 export const chainInviteNftAbi = [

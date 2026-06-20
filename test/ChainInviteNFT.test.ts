@@ -174,7 +174,11 @@ describe("ChainInviteNFT", async function () {
     await chainInviteNft.write.inviteGuest([eventId, guest.account.address]);
 
     const tokenUri = await chainInviteNft.read.tokenURI([1n]);
+    const encodedJson = tokenUri.replace("data:application/json;base64,", "");
+    const metadata = JSON.parse(Buffer.from(encodedJson, "base64").toString("utf8"));
 
     assert.equal(tokenUri.startsWith("data:application/json;base64,"), true);
+    assert.equal(metadata.name, "ChainInvite Ticket #1");
+    assert.equal(metadata.image.startsWith("data:image/svg+xml;base64,"), true);
   });
 });

@@ -8,6 +8,9 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 contract ChainInviteNFT is ERC721 {
     using Strings for uint256;
 
+    string private constant TICKET_IMAGE_URI =
+        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiB2aWV3Qm94PSIwIDAgMTAyNCAxMDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIGZpbGw9IiNmNmY0ZWUiLz48cmVjdCB4PSIxMzIiIHk9IjI0MCIgd2lkdGg9Ijc2MCIgaGVpZ2h0PSI1NDQiIHJ4PSI1NiIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMWQ2ZjY4IiBzdHJva2Utd2lkdGg9IjI0Ii8+PGNpcmNsZSBjeD0iMTMyIiBjeT0iNTEyIiByPSI1NiIgZmlsbD0iI2Y2ZjRlZSIvPjxjaXJjbGUgY3g9Ijg5MiIgY3k9IjUxMiIgcj0iNTYiIGZpbGw9IiNmNmY0ZWUiLz48dGV4dCB4PSI1MTIiIHk9IjQ1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjcyIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMWQyNTI3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DaGFpbkludml0ZTwvdGV4dD48dGV4dCB4PSI1MTIiIHk9IjU0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQwIiBmaWxsPSIjNWY2ZjUyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5FUkMtNzIxIFRpY2tldDwvdGV4dD48dGV4dCB4PSI1MTIiIHk9IjYyMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjMwIiBmaWxsPSIjNWNjNzYzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TZXBvbGlhIHRlc3RuZXQ8L3RleHQ+PC9zdmc+";
+
     struct Event {
         string name;
         string description;
@@ -151,6 +154,8 @@ contract ChainInviteNFT is ERC721 {
                     tokenId.toString(),
                     '","description":"',
                     eventData.description,
+                    '","image":"',
+                    TICKET_IMAGE_URI,
                     '","attributes":[',
                     '{"trait_type":"Event","value":"',
                     eventData.name,

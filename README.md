@@ -52,9 +52,9 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
 
 - Network: Sepolia
 - Chain ID: `11155111`
-- Address: `0x82a528a8214bb4a636352194f2a073e6696ca7cd`
-- Deployment block: `11100895`
-- Etherscan: https://sepolia.etherscan.io/address/0x82a528a8214bb4a636352194f2a073e6696ca7cd
+- Address: `0x2993789b32cdbee343c3f2ee6371f39e824b6f61`
+- Deployment block: `11100949`
+- Etherscan: https://sepolia.etherscan.io/address/0x2993789b32cdbee343c3f2ee6371f39e824b6f61
 
 ## Demoadatok
 
@@ -115,8 +115,8 @@ Frontend `web/.env.local`:
 NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
 NEXT_PUBLIC_CHAIN_ID=11155111
 NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
-NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x82a528a8214bb4a636352194f2a073e6696ca7cd
-NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=11100895
+NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x2993789b32cdbee343c3f2ee6371f39e824b6f61
+NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=11100949
 ```
 
 Ne commitolj privát kulcsot. A `PRIVATE_KEY` csak tesztwallet legyen.

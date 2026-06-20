@@ -43,6 +43,12 @@ export function WalletStatus() {
         Invite
       </Link>
       <Link
+        href="/nft/invite/1"
+        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
+      >
+        NFT Invite
+      </Link>
+      <Link
         href="/scanner/1"
         className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
       >

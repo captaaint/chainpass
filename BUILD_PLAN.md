@@ -309,7 +309,7 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 ### 10.5 (Opcionális) Metaadat – hogy szép legyen MetaMaskban
 - [x] **10.5.1 – `tokenURI(tokenId)` override:** adjon vissza egy JSON-metaadatot (név, leírás, kép, esemény dátuma).
-- [ ] **10.5.2 –** Kezdéshez elég egy statikus kép-URL; később IPFS. ⚠️ személyes adatot ne tegyél a metaadatba (publikus!). *(A JSON data URI elkészült; külön kép-URL/IPFS még nincs.)*
+- [x] **10.5.2 –** Kezdéshez elég egy statikus kép-URL; később IPFS. ⚠️ személyes adatot ne tegyél a metaadatba (publikus!). *(Statikus SVG data URI bekerült az NFT metaadat `image` mezőjébe.)*
 
 ### 10.6 Tesztek (bővítsd a tesztfájlt)
 - [x] **10.6.1 –** ✅ Meghíváskor tényleg mintelődik NFT, és a vendég lesz a `ownerOf`.
