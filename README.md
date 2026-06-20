@@ -141,6 +141,33 @@ Fejlesztoi URL:
 http://localhost:3000
 ```
 
+## Frontend Deploy Vercelre
+
+A Next.js app a `web/` mappaban van, ezert Vercelen a projekt rootja legyen `web`.
+
+CLI deploy:
+
+```bash
+cd web
+npx vercel login
+npx vercel deploy --prod
+```
+
+Vercel environment variables:
+
+```env
+NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
+```
+
+Git-alapu deploynal a Vercel Project Settings alatt allitsd be:
+
+- Framework Preset: `Next.js`
+- Root Directory: `web`
+- Build Command: `npm run build`
+- Install Command: `npm install`
+
 ## Demo Flow
 
 1. Nyisd meg a frontendet: `http://localhost:3000`.

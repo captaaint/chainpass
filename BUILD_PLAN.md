@@ -251,7 +251,7 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 - [x] **9.3 – Demó-adatok:** hozz létre 1–2 mintaeseményt + pár meghívót a bemutatóhoz.
 - [x] **9.4 – README.md megírása:** projekt célja · stack · telepítés lépésről lépésre · `.env` változók · deployolt contract cím · demó-lépések (organizer → invite → guest QR → scanner check-in).
 - [x] **9.5 – Képernyőképek vagy rövid demó-videó** a README-be / portfólióba.
-- [ ] **9.6 – Frontend deploy** (pl. Vercel) – hogy a kamerás scanner HTTPS-en menjen és linkelhető legyen.
+- [ ] **9.6 – Frontend deploy** (pl. Vercel) – hogy a kamerás scanner HTTPS-en menjen és linkelhető legyen. *(Előkészítve: Vercel CLI login szükséges; deploy instrukciók a README-ben.)*
 - [ ] **9.7 – Végső commit + tag:** `release: ChainInvite v1`.
 
 **Szakasz-DoD = Projekt Definition of Done:**
