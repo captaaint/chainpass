@@ -48,5 +48,6 @@ Ez a mappa minden használt technológiához tartalmaz egy külön, kezdőbarát
 | Blockchain-kliens könyvtár | viem | [viem.md](viem.md) |
 | Stílus | Tailwind CSS | [tailwind.md](tailwind.md) |
 | QR generálás + olvasás | qrcode / html5-qrcode | [qr-codes.md](qr-codes.md) |
+| NFT-meghívó (V2/V3 irány) | ERC-721 / soulbound | [nft.md](nft.md) |
 
 > Ajánlott olvasási sorrend kezdőként: Ethereum/Sepolia → Solidity → Hardhat → Next.js → TypeScript → viem → wagmi → MetaMask → QR → Tailwind.

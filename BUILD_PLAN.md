@@ -265,6 +265,78 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 ---
 
+## 10. szakasz – ERC-721 NFT-meghívó (V2) (≈ 2–3 nap)
+
+**Cél:** a meghívó ne csak egy `bool` legyen a `mapping`-ben, hanem egy **birtokolható NFT** a vendég walletjében (ERC-721 szabvány). A vendég látja a belépőjét MetaMaskban, a check-in pedig a token tulajdonjogán alapul.
+**Előfeltétel:** a V1 (0–9. szakasz) kész és deployolva. Háttér: lásd [docs/nft.md](docs/nft.md).
+
+🧠 **Tanulási mini-sorrend (mielőtt kódolsz):** mi az ERC-721 → `ownerOf` / `_safeMint` → öröklődés Solidityben (`is ERC721`) → `tokenId` kiosztás → `tokenURI`/metaadat. Az [OpenZeppelin ERC-721 doksi](https://docs.openzeppelin.com/contracts/erc721) bevezetője elég.
+
+⚠️ **Alapelv:** NFT-contractot **soha ne írj nulláról** – mindig az auditált OpenZeppelin alapból indulj ki.
+
+### 10.1 Előkészítés
+- [x] **10.1.1 – OpenZeppelin telepítése:** `npm install @openzeppelin/contracts`.
+- [x] **10.1.2 – Új contract másolatból:** `contracts/ChainInviteNFT.sol` (a V1-et ne bántsd, hogy maradjon összehasonlítási alap).
+- [x] **10.1.3 – Öröklődés beállítása:**
+  ```solidity
+  // SPDX-License-Identifier: MIT
+  pragma solidity ^0.8.24;
+
+  import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+  contract ChainInviteNFT is ERC721 {
+      constructor() ERC721("ChainInvite Ticket", "CINV") {}
+      // ... a V1 esemény-logika ide is jön
+  }
+  ```
+
+### 10.2 Adatmodell-kiegészítés
+- [x] **10.2.1 –** `uint256 public nextTokenId;` (auto tokenId kiosztáshoz).
+- [x] **10.2.2 –** `mapping(uint256 => uint256) public tokenEvent;` – melyik tokenId melyik eseményhez tartozik.
+- [x] **10.2.3 –** `mapping(uint256 => bool) public tokenUsed;` – a check-in már felhasználta-e ezt a tokent (egyszer-használatosság).
+- [x] **10.2.4 –** (Opcionális) `mapping(uint256 => mapping(address => uint256)) public guestToken;` – gyors visszakereséshez, hogy egy vendégnek melyik tokenje van egy eseményre.
+
+### 10.3 Mint a meghíváskor
+- [x] **10.3.1 – `inviteGuest` átírása:** a `bool` állítás helyett (vagy mellett) `_safeMint(guest, tokenId)`-t hív, beállítja a `tokenEvent[tokenId] = eventId`-t, növeli a `nextTokenId`-t.
+- [x] **10.3.2 – Új event:** `InviteMinted(uint256 eventId, address guest, uint256 tokenId)` – a frontend ebből listáz.
+- [x] **10.3.3 – Dupla-mint védelem:** ugyanarra az esemény+vendég párra ne lehessen kétszer mintelni (`require`).
+
+### 10.4 Check-in a token tulajdonjoga alapján
+- [x] **10.4.1 – `checkIn` átírása:** a vendég `guest` címe **birtokolja-e** az adott `tokenId`-t (`ownerOf(tokenId) == guest`), és az adott eseményhez tartozik-e (`tokenEvent[tokenId] == eventId`).
+- [x] **10.4.2 –** Feltétel: `tokenUsed[tokenId] == false`. Sikerkor `tokenUsed[tokenId] = true`, `GuestCheckedIn` emit.
+- [x] **10.4.3 –** Jogosultság marad: organizer **vagy** engedélyezett scanner hívhatja.
+- [x] **10.4.4 – `isValidInvite` frissítése:** tulajdonjog + nem használt token alapján adjon `bool`-t.
+
+### 10.5 (Opcionális) Metaadat – hogy szép legyen MetaMaskban
+- [x] **10.5.1 – `tokenURI(tokenId)` override:** adjon vissza egy JSON-metaadatot (név, leírás, kép, esemény dátuma).
+- [ ] **10.5.2 –** Kezdéshez elég egy statikus kép-URL; később IPFS. ⚠️ személyes adatot ne tegyél a metaadatba (publikus!). *(A JSON data URI elkészült; külön kép-URL/IPFS még nincs.)*
+
+### 10.6 Tesztek (bővítsd a tesztfájlt)
+- [x] **10.6.1 –** ✅ Meghíváskor tényleg mintelődik NFT, és a vendég lesz a `ownerOf`.
+- [x] **10.6.2 –** ✅ A `tokenEvent` a helyes eseményre mutat.
+- [x] **10.6.3 –** ❌ Ugyanarra az esemény+vendég párra nem lehet kétszer mintelni (revert).
+- [x] **10.6.4 –** ✅ A token tulajdonosa check-inelhető, és utána `tokenUsed = true`.
+- [x] **10.6.5 –** ❌ Olyan cím, aki nem birtokolja a tokent, nem check-inelhető (revert).
+- [x] **10.6.6 –** ❌ Már felhasznált token másodszor nem check-inelhető (revert).
+- [x] **10.6.7 – Futtatás:** `npx hardhat test` – minden zöld.
+
+### 10.7 Deploy + frontend bekötés
+- [ ] **10.7.1 – Deploy** a `ChainInviteNFT`-re Sepoliára (új `scripts/deploy-nft.ts` vagy a meglévő bővítése), cím elmentése. *(Deploy script elkészült; Sepolia deploy még nincs futtatva.)*
+- [ ] **10.7.2 – ABI + cím frissítése** a frontenden (`web/lib/contract.ts`). ⚠️ contract-változás után mindig új ABI!
+- [ ] **10.7.3 – Vendégoldal:** mutassa, hogy a meghívó már egy birtokolt NFT (tokenId), a QR payload kapjon `tokenId`-t is.
+- [ ] **10.7.4 – Scanner:** a `checkIn` a `tokenId` alapján menjen.
+- [ ] **10.7.5 – (Bónusz)** "Nézd meg a walletedben / OpenSea testneten" link a vendégoldalon.
+
+- [ ] **10.8 – Commit:** `feat: ERC-721 NFT invites (V2)`.
+
+🧠 *Mit tanulsz itt?* Szabvány-öröklődés (`is ERC721`), külső könyvtár használata (OpenZeppelin), tulajdonjog-alapú jogosultság (`ownerOf`) a sima `bool` helyett, és NFT-metaadat. Ez a rész teszi a portfóliót igazán erőssé.
+
+**Szakasz-DoD:** meghíváskor NFT mintelődik a vendégnek · a check-in a token tulajdonjogán alapul · a token egyszer használható · tesztek zöldek · deploy + frontend frissítve · (opcionálisan) látszik a wallet/Etherscan NFT-fülén.
+
+> **Következő lépés (V3, opcionális):** tedd a meghívót **soulbound**-dá (nem átruházható) – az átruházó függvények letiltásával. Részletek: [docs/nft.md](docs/nft.md).
+
+---
+
 ## Gyors referencia – parancsok
 
 ```bash
@@ -284,6 +356,7 @@ npm run build                 # production build
 - Hardhat: https://hardhat.org/docs/getting-started
 - viem: https://viem.sh/docs/getting-started
 - wagmi: https://wagmi.sh/
+- OpenZeppelin (ERC-721): https://docs.openzeppelin.com/contracts/erc721
 
 ---
 
