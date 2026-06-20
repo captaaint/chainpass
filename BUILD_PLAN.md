@@ -246,22 +246,22 @@ Itt tanulod meg a blockchain lényegét: állapot (storage), `mapping`, `event`,
 
 **Cél:** portfólióképes, bemutatható verzió.
 
-- [ ] **9.1 – Loading- és üres állapotok:** spinner tranzakció közben, értelmes üzenet üres eseménylistára.
-- [ ] **9.2 – Hibakezelés:** elutasított tranzakció, rossz hálózat, nem csatlakozott wallet – mind barátságos üzenet.
-- [ ] **9.3 – Demó-adatok:** hozz létre 1–2 mintaeseményt + pár meghívót a bemutatóhoz.
-- [ ] **9.4 – README.md megírása:** projekt célja · stack · telepítés lépésről lépésre · `.env` változók · deployolt contract cím · demó-lépések (organizer → invite → guest QR → scanner check-in).
-- [ ] **9.5 – Képernyőképek vagy rövid demó-videó** a README-be / portfólióba.
+- [x] **9.1 – Loading- és üres állapotok:** spinner tranzakció közben, értelmes üzenet üres eseménylistára.
+- [x] **9.2 – Hibakezelés:** elutasított tranzakció, rossz hálózat, nem csatlakozott wallet – mind barátságos üzenet.
+- [x] **9.3 – Demó-adatok:** hozz létre 1–2 mintaeseményt + pár meghívót a bemutatóhoz.
+- [x] **9.4 – README.md megírása:** projekt célja · stack · telepítés lépésről lépésre · `.env` változók · deployolt contract cím · demó-lépések (organizer → invite → guest QR → scanner check-in).
+- [x] **9.5 – Képernyőképek vagy rövid demó-videó** a README-be / portfólióba.
 - [ ] **9.6 – Frontend deploy** (pl. Vercel) – hogy a kamerás scanner HTTPS-en menjen és linkelhető legyen.
 - [ ] **9.7 – Végső commit + tag:** `release: ChainInvite v1`.
 
 **Szakasz-DoD = Projekt Definition of Done:**
-- [ ] Contract lokálisan tesztelve (happy path + hibás esetek).
-- [ ] Contract Sepolián deployolva.
-- [ ] Admin tud eseményt létrehozni és vendéget meghívni.
-- [ ] Vendég látja a meghívót és QR-t kap.
+- [x] Contract lokálisan tesztelve (happy path + hibás esetek).
+- [x] Contract Sepolián deployolva.
+- [x] Admin tud eseményt létrehozni és vendéget meghívni.
+- [x] Vendég látja a meghívót és QR-t kap.
 - [ ] Scanner beolvas és sikeresen check-inel.
 - [ ] Második beolvasás "felhasznált"-at jelez.
-- [ ] README teljes (cél, telepítés, env, deploy cím, demó-lépések).
+- [x] README teljes (cél, telepítés, env, deploy cím, demó-lépések).
 
 ---
 
