@@ -24,36 +24,6 @@ export function WalletStatus() {
       >
         Console
       </Link>
-      <Link
-        href="/admin"
-        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-      >
-        Admin
-      </Link>
-      <Link
-        href="/nft/admin"
-        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-      >
-        NFT Admin
-      </Link>
-      <Link
-        href="/invite/1"
-        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-      >
-        Invite
-      </Link>
-      <Link
-        href="/nft/invite/1"
-        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-      >
-        NFT Invite
-      </Link>
-      <Link
-        href="/scanner/1"
-        className="inline-flex min-h-10 items-center rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-      >
-        Scanner
-      </Link>
 
       {isConnected && !isSepolia ? (
         <button

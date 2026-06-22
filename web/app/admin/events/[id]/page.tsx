@@ -195,14 +195,14 @@ export default function EventDetailsPage() {
   return (
     <main className="min-h-screen px-4 py-6 text-[#1d2527] md:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <PageHeader eyebrow="Admin" title={`Event #${params.id}`} />
+        <PageHeader eyebrow="Management" title={`Event #${params.id}`} />
 
         <Link
-          href="/admin"
+          href="/"
           className="inline-flex w-fit min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
         >
           <ArrowLeft size={16} aria-hidden="true" />
-          Back to admin
+          Back to console
         </Link>
 
         {address && !isSepolia ? (

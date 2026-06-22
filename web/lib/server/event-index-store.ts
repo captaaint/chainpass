@@ -1,4 +1,5 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 import type { Address } from "viem";
@@ -116,13 +117,17 @@ async function readStore() {
       return emptyStore();
     }
 
+    if (error instanceof SyntaxError) {
+      return emptyStore();
+    }
+
     throw error;
   }
 }
 
 async function writeStore(store: StoreData) {
   await mkdir(path.dirname(STORE_PATH), { recursive: true });
-  const tempPath = `${STORE_PATH}.tmp`;
+  const tempPath = `${STORE_PATH}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(tempPath, JSON.stringify({ version: STORE_VERSION, ...store }, null, 2));
   await rename(tempPath, STORE_PATH);
 }
@@ -130,6 +135,16 @@ async function writeStore(store: StoreData) {
 export async function getIndexCursor(variant: EventIndexVariant) {
   const store = await readStore();
   return BigInt(ensureNamespace(store, variant).cursor);
+}
+
+export async function getIndexMetadata(variant: EventIndexVariant) {
+  const store = await readStore();
+  const namespace = ensureNamespace(store, variant);
+
+  return {
+    cursor: BigInt(namespace.cursor),
+    refreshedAt: namespace.refreshedAt,
+  };
 }
 
 export async function acquireIndexLock(variant: EventIndexVariant, ttlMs = 30_000) {
@@ -227,4 +242,24 @@ export async function getIndexedEventState(
     ),
     checkedIn: Object.values(event?.checkedIn ?? {}).map((entry) => entry.guest),
   };
+}
+
+export async function getIndexedEventIdsForGuest(variant: EventIndexVariant, guest: Address) {
+  const store = await readStore();
+  const namespace = ensureNamespace(store, variant);
+  const normalizedGuest = normalizeAddress(guest);
+
+  return Object.entries(namespace.events)
+    .filter(([, event]) => event.active && Boolean(event.guests[normalizedGuest]))
+    .map(([eventId]) => eventId);
+}
+
+export async function getIndexedEventIdsForScanner(variant: EventIndexVariant, scanner: Address) {
+  const store = await readStore();
+  const namespace = ensureNamespace(store, variant);
+  const normalizedScanner = normalizeAddress(scanner);
+
+  return Object.entries(namespace.events)
+    .filter(([, event]) => event.active && event.scanners[normalizedScanner]?.allowed)
+    .map(([eventId]) => eventId);
 }

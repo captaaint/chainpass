@@ -17,7 +17,7 @@ import {
 import { getContractEventsInBlockRanges } from "@/lib/logs";
 import {
   acquireIndexLock,
-  getIndexCursor,
+  getIndexMetadata,
   mergeEventIndexPatches,
   releaseIndexLock,
   type EventIndexVariant,
@@ -40,11 +40,25 @@ const RPC_URL =
   "https://ethereum-sepolia-rpc.publicnode.com";
 
 const CONFIRMATIONS = BigInt(process.env.INDEX_CONFIRMATIONS ?? "5");
+const REFRESH_TTL_MS = Number(process.env.INDEX_REFRESH_TTL_MS ?? "30000");
+const RPC_DELAY_MS = Number(process.env.INDEX_RPC_DELAY_MS ?? "350");
+const RPC_RETRY_DELAY_MS = Number(process.env.INDEX_RPC_RETRY_DELAY_MS ?? "1500");
 
 const publicClient = createPublicClient({
   chain: sepolia,
   transport: http(RPC_URL),
 });
+
+const refreshPromises = new Map<EventIndexVariant, Promise<RefreshResult>>();
+
+type RefreshResult = {
+  variant: EventIndexVariant;
+  skipped: boolean;
+  reason?: string;
+  fromBlock?: string;
+  toBlock?: string;
+  logCount?: number;
+};
 
 function sortPatches(patches: IndexPatch[]) {
   return patches.sort((left, right) => {
@@ -77,61 +91,98 @@ function nextStartBlock(cursor: bigint, deploymentBlock: bigint) {
   return cursor + 1n > deploymentBlock ? cursor + 1n : deploymentBlock;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("429") || message.includes("Too Many Requests");
+}
+
+function wasRecentlyRefreshed(refreshedAt: string | null) {
+  return Boolean(refreshedAt && Date.now() - Date.parse(refreshedAt) < REFRESH_TTL_MS);
+}
+
+async function withRpcBackoff<T>(request: () => Promise<T>) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await request();
+    } catch (error) {
+      lastError = error;
+
+      if (!isRateLimitError(error) || attempt === 2) {
+        break;
+      }
+
+      await sleep(RPC_RETRY_DELAY_MS * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
 async function indexBase(fromBlock: bigint, toBlock: bigint) {
-  const [guestLogs, scannerLogs, checkedInLogs, deletedLogs] = await Promise.all([
-    getContractEventsInBlockRanges({
+  const guestLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteAddress,
           abi: chainInviteAbi,
           eventName: "GuestInvited",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; guest: Address }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; guest: Address }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const scannerLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteAddress,
           abi: chainInviteAbi,
           eventName: "ScannerUpdated",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; scanner: Address; allowed: boolean }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; scanner: Address; allowed: boolean }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const checkedInLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteAddress,
           abi: chainInviteAbi,
           eventName: "GuestCheckedIn",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; guest: Address }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; guest: Address }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const deletedLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteAddress,
           abi: chainInviteAbi,
           eventName: "EventDeleted",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint }>[]>,
-  ]);
+        })),
+    }) as RawLog<{ eventId: bigint }>[];
 
   return sortPatches([
     ...guestLogs.map((log) => ({
@@ -163,60 +214,64 @@ async function indexBase(fromBlock: bigint, toBlock: bigint) {
 }
 
 async function indexNft(fromBlock: bigint, toBlock: bigint) {
-  const [guestLogs, scannerLogs, checkedInLogs, deletedLogs] = await Promise.all([
-    getContractEventsInBlockRanges({
+  const guestLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteNftAddress,
           abi: chainInviteNftAbi,
           eventName: "InviteMinted",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; guest: Address; tokenId: bigint }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; guest: Address; tokenId: bigint }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const scannerLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteNftAddress,
           abi: chainInviteNftAbi,
           eventName: "ScannerUpdated",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; scanner: Address; allowed: boolean }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; scanner: Address; allowed: boolean }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const checkedInLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteNftAddress,
           abi: chainInviteNftAbi,
           eventName: "GuestCheckedIn",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint; guest: Address }>[]>,
-    getContractEventsInBlockRanges({
+        })),
+    }) as RawLog<{ eventId: bigint; guest: Address }>[];
+  await sleep(RPC_DELAY_MS);
+
+  const deletedLogs = await getContractEventsInBlockRanges({
       fromBlock,
       toBlock,
       getEvents: ({ fromBlock, toBlock }) =>
-        publicClient.getContractEvents({
+        withRpcBackoff(() => publicClient.getContractEvents({
           address: chainInviteNftAddress,
           abi: chainInviteNftAbi,
           eventName: "EventDeleted",
           fromBlock,
           toBlock,
           strict: true,
-        }),
-    }) as Promise<RawLog<{ eventId: bigint }>[]>,
-  ]);
+        })),
+    }) as RawLog<{ eventId: bigint }>[];
 
   return sortPatches([
     ...guestLogs.map((log) => ({
@@ -248,12 +303,17 @@ async function indexNft(fromBlock: bigint, toBlock: bigint) {
   ]);
 }
 
-export async function refreshEventIndex(variant: EventIndexVariant) {
+async function runRefreshEventIndex(variant: EventIndexVariant): Promise<RefreshResult> {
   const hasAddress = variant === "base" ? hasChainInviteAddress : hasChainInviteNftAddress;
   const deploymentBlock = variant === "base" ? chainInviteDeploymentBlock : chainInviteNftDeploymentBlock;
 
   if (!hasAddress) {
     return { variant, skipped: true, reason: "Contract address is not configured." };
+  }
+
+  const metadata = await getIndexMetadata(variant);
+  if (metadata.cursor > 0n && wasRecentlyRefreshed(metadata.refreshedAt)) {
+    return { variant, skipped: true, reason: "Recently refreshed." };
   }
 
   const locked = await acquireIndexLock(variant);
@@ -262,44 +322,69 @@ export async function refreshEventIndex(variant: EventIndexVariant) {
   }
 
   try {
-    const latestBlock = await publicClient.getBlockNumber();
-    const confirmedBlock = latestBlock > CONFIRMATIONS ? latestBlock - CONFIRMATIONS : 0n;
-    const cursor = await getIndexCursor(variant);
-    const fromBlock = nextStartBlock(cursor, deploymentBlock);
+    try {
+      const latestBlock = await withRpcBackoff(() => publicClient.getBlockNumber());
+      const confirmedBlock = latestBlock > CONFIRMATIONS ? latestBlock - CONFIRMATIONS : 0n;
+      const { cursor } = await getIndexMetadata(variant);
+      const fromBlock = nextStartBlock(cursor, deploymentBlock);
 
-    if (fromBlock > confirmedBlock) {
+      if (fromBlock > confirmedBlock) {
+        return {
+          variant,
+          skipped: false,
+          fromBlock: fromBlock.toString(),
+          toBlock: confirmedBlock.toString(),
+          logCount: 0,
+        };
+      }
+
+      const patches =
+        variant === "base"
+          ? await indexBase(fromBlock, confirmedBlock)
+          : await indexNft(fromBlock, confirmedBlock);
+
+      await mergeEventIndexPatches({
+        variant,
+        patches: stripLogIndex(patches),
+        cursor: confirmedBlock,
+      });
+
       return {
         variant,
         skipped: false,
         fromBlock: fromBlock.toString(),
         toBlock: confirmedBlock.toString(),
-        logCount: 0,
+        logCount: patches.length,
       };
+    } catch (error) {
+      if (isRateLimitError(error)) {
+        return { variant, skipped: true, reason: "RPC rate limit reached. Using cached data." };
+      }
+
+      throw error;
     }
-
-    const patches =
-      variant === "base"
-        ? await indexBase(fromBlock, confirmedBlock)
-        : await indexNft(fromBlock, confirmedBlock);
-
-    await mergeEventIndexPatches({
-      variant,
-      patches: stripLogIndex(patches),
-      cursor: confirmedBlock,
-    });
-
-    return {
-      variant,
-      skipped: false,
-      fromBlock: fromBlock.toString(),
-      toBlock: confirmedBlock.toString(),
-      logCount: patches.length,
-    };
   } finally {
     await releaseIndexLock(variant);
   }
 }
 
+export function refreshEventIndex(variant: EventIndexVariant) {
+  const existing = refreshPromises.get(variant);
+  if (existing) {
+    return existing;
+  }
+
+  const refreshPromise = runRefreshEventIndex(variant).finally(() => {
+    refreshPromises.delete(variant);
+  });
+  refreshPromises.set(variant, refreshPromise);
+  return refreshPromise;
+}
+
 export function parseIndexVariant(value: string | null): EventIndexVariant {
   return value === "nft" ? "nft" : "base";
+}
+
+export function getEventIndexPublicClient() {
+  return publicClient;
 }
