@@ -90,9 +90,13 @@ NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x...
 NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=...
 NEXT_PUBLIC_SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
 NEXT_PUBLIC_LOG_BLOCK_RANGE=9999
+SERVER_SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+INDEX_CONFIRMATIONS=5
+LOG_BLOCK_RANGE=9999
 ```
 
 Never commit private keys. `PRIVATE_KEY` must only belong to a test wallet.
+Use `SERVER_SEPOLIA_RPC_URL` for cached admin reads so private RPC credentials do not have to be exposed in the browser.
 
 ## Contract Commands
 

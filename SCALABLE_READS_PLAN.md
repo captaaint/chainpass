@@ -73,6 +73,14 @@ LOG_BLOCK_RANGE=9999
 - Guest and scanner lists should come from the API.
 - Successful invite or scanner updates should refresh the API data.
 
+## Implementation Status
+
+- Added server-side API routes for `GET /api/events/{id}` and `POST /api/refresh`.
+- Added incremental log indexing for standard and NFT events.
+- Added a local JSON cache fallback at `web/.chaininvite-cache.json` for development.
+- Updated admin event detail pages to read guests, scanners, and check-in state from the API.
+- Added server-only RPC configuration through `SERVER_SEPOLIA_RPC_URL`.
+
 ## Contract-Level Improvement
 
 For a new deployment, index important event fields:

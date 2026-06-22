@@ -11,7 +11,7 @@ export function shortenAddress(address?: string) {
 export function formatTimestamp(timestamp: bigint) {
   const date = new Date(Number(timestamp) * 1000);
 
-  return new Intl.DateTimeFormat("hu-HU", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);

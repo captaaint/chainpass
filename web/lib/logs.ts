@@ -1,4 +1,6 @@
-const DEFAULT_LOG_BLOCK_RANGE = BigInt(process.env.NEXT_PUBLIC_LOG_BLOCK_RANGE ?? "9999");
+const DEFAULT_LOG_BLOCK_RANGE = BigInt(
+  process.env.LOG_BLOCK_RANGE ?? process.env.NEXT_PUBLIC_LOG_BLOCK_RANGE ?? "9999",
+);
 
 type BlockRange = {
   fromBlock: bigint;

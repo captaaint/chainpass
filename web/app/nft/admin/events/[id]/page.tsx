@@ -12,18 +12,14 @@ import {
   ShieldCheck,
   UserPlus,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { Address } from "viem";
 import { isAddress } from "viem";
-import {
-  useParams,
-} from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   useAccount,
   useChainId,
-  usePublicClient,
   useReadContract,
-  useReadContracts,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -32,18 +28,23 @@ import { sepolia } from "wagmi/chains";
 
 import { PageHeader } from "@/components/page-header";
 import { TransactionStatus } from "@/components/transaction-status";
-import { chainInviteNftAbi, chainInviteNftAddress, chainInviteNftDeploymentBlock } from "@/lib/contract-nft";
+import { chainInviteNftAbi, chainInviteNftAddress } from "@/lib/contract-nft";
 import { formatTimestamp, normalizeAddress } from "@/lib/format";
-import { getContractEventsInBlockRanges } from "@/lib/logs";
 
 type GuestInvite = {
   guest: Address;
-  tokenId: bigint;
+  tokenId: string;
 };
 
 type ScannerUpdate = {
   scanner: Address;
   allowed: boolean;
+};
+
+type EventIndexResponse = {
+  guests: GuestInvite[];
+  scanners: ScannerUpdate[];
+  checkedIn: Address[];
 };
 
 export default function EventDetailsPage() {
@@ -52,14 +53,14 @@ export default function EventDetailsPage() {
   const { address } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
-  const publicClient = usePublicClient();
   const [guestAddress, setGuestAddress] = useState("");
   const [scannerAddress, setScannerAddress] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [guests, setGuests] = useState<GuestInvite[]>([]);
   const [scanners, setScanners] = useState<ScannerUpdate[]>([]);
-  const [isLogLoading, setIsLogLoading] = useState(false);
-  const [logError, setLogError] = useState<string | null>(null);
+  const [checkedInGuests, setCheckedInGuests] = useState<Set<string>>(new Set());
+  const [isIndexLoading, setIsIndexLoading] = useState(false);
+  const [indexError, setIndexError] = useState<string | null>(null);
 
   const {
     data: eventData,
@@ -101,111 +102,46 @@ export default function EventDetailsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadLogs() {
-      if (!publicClient) {
-        return;
-      }
-
-      setIsLogLoading(true);
-      setLogError(null);
+    async function loadEventIndex() {
+      setIsIndexLoading(true);
+      setIndexError(null);
 
       try {
-        const latestBlock = await publicClient.getBlockNumber();
-        const [inviteLogs, scannerLogs] = await Promise.all([
-          getContractEventsInBlockRanges({
-            fromBlock: chainInviteNftDeploymentBlock,
-            toBlock: latestBlock,
-            getEvents: ({ fromBlock, toBlock }) =>
-              publicClient.getContractEvents({
-                address: chainInviteNftAddress,
-                abi: chainInviteNftAbi,
-                eventName: "InviteMinted",
-                fromBlock,
-                toBlock,
-                strict: true,
-              }),
-          }),
-          getContractEventsInBlockRanges({
-            fromBlock: chainInviteNftDeploymentBlock,
-            toBlock: latestBlock,
-            getEvents: ({ fromBlock, toBlock }) =>
-              publicClient.getContractEvents({
-                address: chainInviteNftAddress,
-                abi: chainInviteNftAbi,
-                eventName: "ScannerUpdated",
-                fromBlock,
-                toBlock,
-                strict: true,
-              }),
-          }),
-        ]);
+        const response = await fetch(`/api/events/${params.id}?variant=nft`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(body?.error ?? "Failed to load event index.");
+        }
 
         if (cancelled) {
           return;
         }
 
-        const guestMap = new Map<string, GuestInvite>();
-        for (const log of inviteLogs) {
-          if (log.args.eventId !== eventId) {
-            continue;
-          }
+        const body = (await response.json()) as EventIndexResponse;
 
-          guestMap.set(normalizeAddress(log.args.guest), {
-            guest: log.args.guest,
-            tokenId: log.args.tokenId,
-          });
-        }
-
-        const scannerMap = new Map<string, ScannerUpdate>();
-        for (const log of scannerLogs) {
-          if (log.args.eventId !== eventId) {
-            continue;
-          }
-
-          scannerMap.set(normalizeAddress(log.args.scanner), {
-            scanner: log.args.scanner,
-            allowed: log.args.allowed,
-          });
-        }
-
-        setGuests([...guestMap.values()]);
-        setScanners([...scannerMap.values()]);
+        setGuests(body.guests);
+        setScanners(body.scanners);
+        setCheckedInGuests(new Set(body.checkedIn.map((guest) => normalizeAddress(guest))));
       } catch (caught) {
         if (!cancelled) {
-          setLogError(caught instanceof Error ? caught.message : "Failed to load event logs");
+          setIndexError(caught instanceof Error ? caught.message : "Failed to load event index.");
         }
       } finally {
         if (!cancelled) {
-          setIsLogLoading(false);
+          setIsIndexLoading(false);
         }
       }
     }
 
-    loadLogs();
+    loadEventIndex();
 
     return () => {
       cancelled = true;
     };
-  }, [eventId, publicClient, isInviteSuccess, isScannerSuccess]);
-
-  const checkedInContracts = useMemo(
-    () =>
-      guests.map((guest) => ({
-        address: chainInviteNftAddress,
-        abi: chainInviteNftAbi,
-        functionName: "checkedIn",
-        args: [eventId, guest.guest] as const,
-        chainId: sepolia.id,
-      })),
-    [eventId, guests],
-  );
-
-  const { data: checkedInResults } = useReadContracts({
-    contracts: checkedInContracts,
-    query: {
-      enabled: guests.length > 0,
-    },
-  });
+  }, [params.id, isInviteSuccess, isScannerSuccess]);
 
   const isOrganizer =
     address && eventData ? normalizeAddress(eventData.organizer) === normalizeAddress(address) : false;
@@ -420,7 +356,7 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-sm font-semibold text-[#5f6f52]">Invited guests</p>
               <p className="mt-1 text-sm text-[#5c6763]">
-                NFT token IDs are read from InviteMinted logs.
+                NFT token IDs, scanner state, and check-in state are served by the cached event index.
               </p>
             </div>
             <span className="rounded-md bg-[#f6f4ee] px-3 py-2 text-sm font-semibold">
@@ -428,22 +364,22 @@ export default function EventDetailsPage() {
             </span>
           </div>
 
-          {isLogLoading ? (
+          {isIndexLoading ? (
             <p className="mt-5 flex items-center gap-2 text-sm text-[#5c6763]">
               <Loader2 size={16} aria-hidden="true" className="animate-spin" />
               Loading guests
             </p>
           ) : null}
 
-          {logError ? <p className="mt-5 text-sm text-[#a53e2f]">{logError}</p> : null}
+          {indexError ? <p className="mt-5 text-sm text-[#a53e2f]">{indexError}</p> : null}
 
-          {!isLogLoading && guests.length === 0 ? (
+          {!isIndexLoading && guests.length === 0 ? (
             <p className="mt-5 text-sm text-[#5c6763]">No guests invited yet.</p>
           ) : null}
 
           <div className="mt-5 grid gap-2">
-            {guests.map((guest, index) => {
-              const checkedIn = Boolean(checkedInResults?.[index]?.result);
+            {guests.map((guest) => {
+              const checkedIn = checkedInGuests.has(normalizeAddress(guest.guest));
 
               return (
                 <div
@@ -453,7 +389,7 @@ export default function EventDetailsPage() {
                   <div className="grid gap-1">
                     <span className="break-all font-mono text-xs">{guest.guest}</span>
                     <span className="text-xs font-semibold text-[#5c6763]">
-                      Token #{guest.tokenId.toString()}
+                      Token #{guest.tokenId}
                     </span>
                   </div>
                   <span
