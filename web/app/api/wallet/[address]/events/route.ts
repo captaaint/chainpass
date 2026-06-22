@@ -29,6 +29,29 @@ type NftEventData = BaseEventData & {
   endTime: bigint;
 };
 
+const legacyNftEventAbi = [
+  {
+    type: "function",
+    name: "getEvent",
+    stateMutability: "view",
+    inputs: [{ name: "eventId", type: "uint256", internalType: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct ChainInviteNFT.Event",
+        components: [
+          { name: "name", type: "string", internalType: "string" },
+          { name: "description", type: "string", internalType: "string" },
+          { name: "startTime", type: "uint256", internalType: "uint256" },
+          { name: "organizer", type: "address", internalType: "address" },
+          { name: "active", type: "bool", internalType: "bool" },
+        ],
+      },
+    ],
+  },
+] as const;
+
 type WalletEventSummary = {
   variant: EventIndexVariant;
   eventId: string;
@@ -167,12 +190,7 @@ async function readEventSummary(
             functionName: "getEvent",
             args: [eventId],
           })) as BaseEventData)
-        : ((await client.readContract({
-            address: chainInviteNftAddress,
-            abi: chainInviteNftAbi,
-            functionName: "getEvent",
-            args: [eventId],
-          })) as NftEventData);
+        : await readNftEvent(eventId);
 
     const indexedState = await getIndexedEventState(variant, eventId.toString());
     const indexedGuest = indexedState.guests.find(
@@ -181,7 +199,7 @@ async function readEventSummary(
     const checkedIn = indexedState.checkedIn.some(
       (guest) => normalizeAddress(guest) === normalizeAddress(wallet),
     );
-    const endTime = variant === "nft" ? (eventData as NftEventData).endTime.toString() : undefined;
+    const endTime = isNftEventData(eventData) ? eventData.endTime.toString() : undefined;
 
     return {
       variant,
@@ -210,6 +228,30 @@ async function readEventSummary(
     };
   } catch {
     return null;
+  }
+}
+
+function isNftEventData(eventData: BaseEventData | NftEventData): eventData is NftEventData {
+  return "endTime" in eventData && typeof eventData.endTime === "bigint";
+}
+
+async function readNftEvent(eventId: bigint): Promise<BaseEventData | NftEventData> {
+  const client = getEventIndexPublicClient();
+
+  try {
+    return (await client.readContract({
+      address: chainInviteNftAddress,
+      abi: chainInviteNftAbi,
+      functionName: "getEvent",
+      args: [eventId],
+    })) as NftEventData;
+  } catch {
+    return (await client.readContract({
+      address: chainInviteNftAddress,
+      abi: legacyNftEventAbi,
+      functionName: "getEvent",
+      args: [eventId],
+    })) as BaseEventData;
   }
 }
 

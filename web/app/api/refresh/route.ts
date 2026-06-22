@@ -12,10 +12,15 @@ export async function POST(request: NextRequest) {
 
 async function refresh(request: NextRequest) {
   const variantParam = request.nextUrl.searchParams.get("variant");
+  const force = request.nextUrl.searchParams.get("force") === "true";
+  const confirmationsParam = request.nextUrl.searchParams.get("confirmations");
+  const confirmations = confirmationsParam ? BigInt(confirmationsParam) : undefined;
   const variants = variantParam ? [parseIndexVariant(variantParam)] : (["base", "nft"] as const);
 
   try {
-    const results = await Promise.all(variants.map((variant) => refreshEventIndex(variant)));
+    const results = await Promise.all(
+      variants.map((variant) => refreshEventIndex(variant, { force, confirmations })),
+    );
     return NextResponse.json({ results });
   } catch (error) {
     return NextResponse.json(

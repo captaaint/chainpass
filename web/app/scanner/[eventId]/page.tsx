@@ -145,6 +145,17 @@ export default function ScannerPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isCheckInSuccess) {
+      return;
+    }
+
+    fetch("/api/refresh?variant=base&force=true&confirmations=0", {
+      method: "POST",
+    }).catch(() => undefined);
+    refetchValidInvite().catch(() => undefined);
+  }, [isCheckInSuccess, refetchValidInvite]);
+
   async function startScanner() {
     setScanError(null);
     setScannedPayload(null);

@@ -58,6 +58,10 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const isSepolia = chainId === sepolia.id;
+  const scannableEventKeys = useMemo(
+    () => new Set(scannableEvents.map((event) => getEventKey(event))),
+    [scannableEvents],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -203,13 +207,14 @@ export default function Home() {
           </div>
         ) : null}
 
-        <section className="grid gap-5 lg:grid-cols-3">
+        <section className="grid gap-5 lg:grid-cols-2">
           <EventList
             title="Events I organize"
             emptyText="No events created by this wallet yet."
             events={organizedEvents}
             actionLabel="Manage"
             actionHref={(event) => event.href}
+            canScan={(event) => scannableEventKeys.has(getEventKey(event))}
           />
           <EventList
             title="Events I am invited to"
@@ -217,14 +222,7 @@ export default function Home() {
             events={invitedEvents}
             actionLabel="Open invite"
             actionHref={(event) => event.inviteHref}
-          />
-          <EventList
-            title="Events I can scan"
-            emptyText="No scanner access found for this wallet yet."
-            events={scannableEvents}
-            actionLabel="Scan"
-            actionHref={(event) => event.scannerHref}
-            actionIcon="scan"
+            canScan={(event) => scannableEventKeys.has(getEventKey(event))}
           />
         </section>
       </div>
@@ -238,14 +236,14 @@ function EventList({
   events,
   actionLabel,
   actionHref,
-  actionIcon = "open",
+  canScan,
 }: {
   title: string;
   emptyText: string;
   events: WalletEventSummary[];
   actionLabel: string;
   actionHref: (event: WalletEventSummary) => string;
-  actionIcon?: "open" | "scan";
+  canScan: (event: WalletEventSummary) => boolean;
 }) {
   return (
     <section className="rounded-md border border-[#d8d2c6] bg-white p-5">
@@ -270,7 +268,7 @@ function EventList({
             event={event}
             actionLabel={actionLabel}
             actionHref={actionHref(event)}
-            actionIcon={actionIcon}
+            canScan={canScan(event)}
           />
         ))}
       </div>
@@ -282,12 +280,12 @@ function EventCard({
   event,
   actionLabel,
   actionHref,
-  actionIcon,
+  canScan,
 }: {
   event: WalletEventSummary;
   actionLabel: string;
   actionHref: string;
-  actionIcon: "open" | "scan";
+  canScan: boolean;
 }) {
   return (
     <div className="grid gap-3 rounded-md border border-[#e5ded3] p-4 transition hover:border-[#9d8f7e]">
@@ -310,17 +308,24 @@ function EventCard({
           <h2 className="mt-3 text-lg font-semibold">{event.name}</h2>
           <p className="mt-2 text-sm leading-6 text-[#5c6763]">{event.description}</p>
         </div>
-        <Link
-          href={actionHref}
-          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
-        >
-          {actionLabel}
-          {actionIcon === "scan" ? (
-            <ScanLine size={16} aria-hidden="true" />
-          ) : (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={actionHref}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c8c0b4] bg-white px-3 text-sm font-semibold transition hover:border-[#9d8f7e]"
+          >
+            {actionLabel}
             <ExternalLink size={16} aria-hidden="true" />
-          )}
-        </Link>
+          </Link>
+          {canScan ? (
+            <Link
+              href={event.scannerHref}
+              className="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#1d6f68] px-3 text-sm font-semibold text-white transition hover:bg-[#15534e]"
+            >
+              Scan
+              <ScanLine size={16} aria-hidden="true" />
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <dl className="grid gap-2 text-sm md:grid-cols-2">
@@ -349,4 +354,8 @@ function EventCard({
       </dl>
     </div>
   );
+}
+
+function getEventKey(event: Pick<WalletEventSummary, "variant" | "eventId">) {
+  return `${event.variant}-${event.eventId}`;
 }

@@ -303,7 +303,15 @@ async function indexNft(fromBlock: bigint, toBlock: bigint) {
   ]);
 }
 
-async function runRefreshEventIndex(variant: EventIndexVariant): Promise<RefreshResult> {
+type RefreshOptions = {
+  force?: boolean;
+  confirmations?: bigint;
+};
+
+async function runRefreshEventIndex(
+  variant: EventIndexVariant,
+  options: RefreshOptions = {},
+): Promise<RefreshResult> {
   const hasAddress = variant === "base" ? hasChainInviteAddress : hasChainInviteNftAddress;
   const deploymentBlock = variant === "base" ? chainInviteDeploymentBlock : chainInviteNftDeploymentBlock;
 
@@ -312,7 +320,7 @@ async function runRefreshEventIndex(variant: EventIndexVariant): Promise<Refresh
   }
 
   const metadata = await getIndexMetadata(variant);
-  if (metadata.cursor > 0n && wasRecentlyRefreshed(metadata.refreshedAt)) {
+  if (!options.force && metadata.cursor > 0n && wasRecentlyRefreshed(metadata.refreshedAt)) {
     return { variant, skipped: true, reason: "Recently refreshed." };
   }
 
@@ -324,7 +332,8 @@ async function runRefreshEventIndex(variant: EventIndexVariant): Promise<Refresh
   try {
     try {
       const latestBlock = await withRpcBackoff(() => publicClient.getBlockNumber());
-      const confirmedBlock = latestBlock > CONFIRMATIONS ? latestBlock - CONFIRMATIONS : 0n;
+      const confirmations = options.confirmations ?? CONFIRMATIONS;
+      const confirmedBlock = latestBlock > confirmations ? latestBlock - confirmations : 0n;
       const { cursor } = await getIndexMetadata(variant);
       const fromBlock = nextStartBlock(cursor, deploymentBlock);
 
@@ -368,13 +377,17 @@ async function runRefreshEventIndex(variant: EventIndexVariant): Promise<Refresh
   }
 }
 
-export function refreshEventIndex(variant: EventIndexVariant) {
+export function refreshEventIndex(variant: EventIndexVariant, options: RefreshOptions = {}) {
+  if (options.force) {
+    return runRefreshEventIndex(variant, options);
+  }
+
   const existing = refreshPromises.get(variant);
   if (existing) {
     return existing;
   }
 
-  const refreshPromise = runRefreshEventIndex(variant).finally(() => {
+  const refreshPromise = runRefreshEventIndex(variant, options).finally(() => {
     refreshPromises.delete(variant);
   });
   refreshPromises.set(variant, refreshPromise);
