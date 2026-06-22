@@ -30,6 +30,15 @@ export const chainInviteNftAbi = [
   },
   {
     type: "event",
+    name: "EventDeleted",
+    anonymous: false,
+    inputs: [
+      { name: "eventId", type: "uint256", indexed: false, internalType: "uint256" },
+      { name: "organizer", type: "address", indexed: false, internalType: "address" },
+    ],
+  },
+  {
+    type: "event",
     name: "GuestInvited",
     anonymous: false,
     inputs: [
@@ -119,6 +128,7 @@ export const chainInviteNftAbi = [
       { name: "name", type: "string", internalType: "string" },
       { name: "description", type: "string", internalType: "string" },
       { name: "startTime", type: "uint256", internalType: "uint256" },
+      { name: "endTime", type: "uint256", internalType: "uint256" },
     ],
     outputs: [{ name: "eventId", type: "uint256", internalType: "uint256" }],
   },
@@ -152,6 +162,13 @@ export const chainInviteNftAbi = [
       { name: "guest", type: "address", internalType: "address" },
       { name: "tokenId", type: "uint256", internalType: "uint256" },
     ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "deleteEvent",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "eventId", type: "uint256", internalType: "uint256" }],
     outputs: [],
   },
   {
@@ -233,6 +250,7 @@ export const chainInviteNftAbi = [
           { name: "name", type: "string", internalType: "string" },
           { name: "description", type: "string", internalType: "string" },
           { name: "startTime", type: "uint256", internalType: "uint256" },
+          { name: "endTime", type: "uint256", internalType: "uint256" },
           { name: "organizer", type: "address", internalType: "address" },
           { name: "active", type: "bool", internalType: "bool" },
         ],

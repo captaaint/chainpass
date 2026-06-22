@@ -1,13 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarPlus, ExternalLink, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarPlus, ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
-import { useAccount, usePublicClient } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useReadContracts,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
+import { sepolia } from "wagmi/chains";
 
 import { PageHeader } from "@/components/page-header";
-import { chainInviteAbi, chainInviteAddress, chainInviteDeploymentBlock } from "@/lib/contract";
+import { TransactionStatus } from "@/components/transaction-status";
+import { chainInviteAbi, chainInviteAddress } from "@/lib/contract";
 import { formatTimestamp, normalizeAddress, shortenAddress } from "@/lib/format";
 
 type CreatedEvent = {
@@ -15,70 +23,112 @@ type CreatedEvent = {
   organizer: Address;
   name: string;
   startTime: bigint;
+  active: boolean;
+};
+
+type EventData = {
+  organizer: Address;
+  name: string;
+  startTime: bigint;
+  active: boolean;
 };
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
-  const [events, setEvents] = useState<CreatedEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: deleteHash,
+    error: deleteError,
+    isPending: isDeletePending,
+    writeContract: writeDelete,
+  } = useWriteContract();
+  const {
+    isLoading: isDeleteConfirming,
+    isSuccess: isDeleteSuccess,
+  } = useWaitForTransactionReceipt({ hash: deleteHash, chainId: sepolia.id });
 
-  useEffect(() => {
-    let cancelled = false;
+  const {
+    data: eventCounter,
+    error: counterError,
+    isLoading: isCounterLoading,
+  } = useReadContract({
+    address: chainInviteAddress,
+    abi: chainInviteAbi,
+    functionName: "eventCounter",
+    chainId: sepolia.id,
+    query: {
+      enabled: Boolean(address),
+    },
+  });
 
-    async function loadEvents() {
-      if (!publicClient || !address) {
-        setEvents([]);
-        return;
-      }
+  const eventContracts = useMemo(
+    () =>
+      Array.from({ length: Number(eventCounter ?? 0n) }, (_, index) => ({
+        address: chainInviteAddress,
+        abi: chainInviteAbi,
+        functionName: "getEvent",
+        args: [BigInt(index + 1)] as const,
+        chainId: sepolia.id,
+      })),
+    [eventCounter],
+  );
 
-      setIsLoading(true);
-      setError(null);
+  const {
+    data: eventResults,
+    error: eventsError,
+    isLoading: isEventsLoading,
+    refetch: refetchEvents,
+  } = useReadContracts({
+    contracts: eventContracts,
+    query: {
+      enabled: Boolean(address) && eventContracts.length > 0,
+    },
+  });
 
-      try {
-        const logs = await publicClient.getContractEvents({
-          address: chainInviteAddress,
-          abi: chainInviteAbi,
-          eventName: "EventCreated",
-          fromBlock: chainInviteDeploymentBlock,
-          toBlock: "latest",
-          strict: true,
-        });
-
-        if (cancelled) {
-          return;
-        }
-
-        const organizer = normalizeAddress(address);
-        const createdEvents = logs
-          .map((log) => ({
-            eventId: log.args.eventId,
-            organizer: log.args.organizer,
-            name: log.args.name,
-            startTime: log.args.startTime,
-          }))
-          .filter((event) => normalizeAddress(event.organizer) === organizer)
-          .sort((a, b) => Number(b.eventId - a.eventId));
-
-        setEvents(createdEvents);
-      } catch (caught) {
-        if (!cancelled) {
-          setError(caught instanceof Error ? caught.message : "Failed to load events");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+  const events = useMemo(() => {
+    if (!address || !eventResults) {
+      return [];
     }
 
-    loadEvents();
+    const organizer = normalizeAddress(address);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [address, publicClient]);
+    return eventResults
+      .map((result, index) => {
+        if (result.status !== "success") {
+          return null;
+        }
+
+        const eventData = result.result as unknown as EventData;
+        return {
+          eventId: BigInt(index + 1),
+          organizer: eventData.organizer,
+          name: eventData.name,
+          startTime: eventData.startTime,
+          active: eventData.active,
+        };
+      })
+      .filter((event): event is CreatedEvent => Boolean(event))
+      .filter((event) => event.active && normalizeAddress(event.organizer) === organizer)
+      .sort((a, b) => Number(b.eventId - a.eventId));
+  }, [address, eventResults]);
+
+  useEffect(() => {
+    if (isDeleteSuccess) {
+      void refetchEvents();
+    }
+  }, [isDeleteSuccess, refetchEvents]);
+
+  const isLoading = Boolean(address) && (isCounterLoading || isEventsLoading);
+  const error = counterError ?? eventsError;
+
+  function deleteEvent(eventId: bigint) {
+    writeDelete({
+      address: chainInviteAddress,
+      abi: chainInviteAbi,
+      functionName: "deleteEvent",
+      args: [eventId],
+      chainId: sepolia.id,
+    });
+  }
 
   const emptyState = useMemo(() => {
     if (!isConnected) {
@@ -101,7 +151,7 @@ export default function AdminPage() {
           <div>
             <p className="text-sm font-semibold text-[#5f6f52]">Events</p>
             <p className="mt-1 text-sm text-[#5c6763]">
-              EventCreated logs are filtered by organizer address.
+              Contract state is filtered by organizer address.
             </p>
           </div>
           <Link
@@ -124,9 +174,16 @@ export default function AdminPage() {
 
         {error ? (
           <div className="rounded-md border border-[#d8d2c6] bg-white p-5 text-sm leading-6 text-[#a53e2f]">
-            {error}
+            {error.message}
           </div>
         ) : null}
+
+        <TransactionStatus
+          hash={deleteHash}
+          isConfirming={isDeleteConfirming}
+          isSuccess={isDeleteSuccess}
+          error={deleteError}
+        />
 
         {!isLoading && events.length === 0 ? (
           <div className="rounded-md border border-[#d8d2c6] bg-white p-5 text-sm text-[#5c6763]">
@@ -136,12 +193,11 @@ export default function AdminPage() {
 
         <section className="grid gap-3">
           {events.map((event) => (
-            <Link
+            <div
               key={event.eventId.toString()}
-              href={`/admin/events/${event.eventId.toString()}`}
               className="grid gap-3 rounded-md border border-[#d8d2c6] bg-white p-5 transition hover:border-[#9d8f7e] md:grid-cols-[1fr_auto]"
             >
-              <div className="min-w-0">
+              <Link href={`/admin/events/${event.eventId.toString()}`} className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#5f6f52]">
                   Event #{event.eventId.toString()}
                 </p>
@@ -149,12 +205,26 @@ export default function AdminPage() {
                 <p className="mt-2 text-sm text-[#5c6763]">
                   Starts {formatTimestamp(event.startTime)}
                 </p>
+              </Link>
+              <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                <Link
+                  href={`/admin/events/${event.eventId.toString()}`}
+                  className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#1d6f68]"
+                >
+                  Open
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+                <button
+                  type="button"
+                  disabled={isDeletePending || isDeleteConfirming}
+                  onClick={() => deleteEvent(event.eventId)}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#d8b8b1] bg-white px-3 text-sm font-semibold text-[#a53e2f] transition hover:border-[#a53e2f] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                  Delete
+                </button>
               </div>
-              <span className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#1d6f68]">
-                Open
-                <ExternalLink size={16} aria-hidden="true" />
-              </span>
-            </Link>
+            </div>
           ))}
         </section>
       </div>

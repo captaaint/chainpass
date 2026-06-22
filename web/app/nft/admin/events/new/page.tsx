@@ -27,6 +27,7 @@ export default function NewEventPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: hash, error, isPending, writeContract } = useWriteContract();
@@ -62,6 +63,11 @@ export default function NewEventPage() {
       return;
     }
 
+    if (endTime && toUnixSeconds(endTime) < toUnixSeconds(startTime)) {
+      setFormError("End time cannot be before the start time.");
+      return;
+    }
+
     if (!isSepolia) {
       setFormError("Switch your wallet to Sepolia before creating an event.");
       return;
@@ -71,7 +77,8 @@ export default function NewEventPage() {
       address: chainInviteNftAddress,
       abi: chainInviteNftAbi,
       functionName: "createEvent",
-      args: [name.trim(), description.trim(), toUnixSeconds(startTime)],
+      // Empty endTime means 0n, which disables expiry.
+      args: [name.trim(), description.trim(), toUnixSeconds(startTime), endTime ? toUnixSeconds(endTime) : 0n],
       chainId: sepolia.id,
     });
   }
@@ -139,6 +146,19 @@ export default function NewEventPage() {
               onChange={(event) => setStartTime(event.target.value)}
               className="min-h-11 rounded-md border border-[#c8c0b4] px-3 font-normal outline-none transition focus:border-[#1d6f68]"
             />
+          </label>
+
+          <label className="grid gap-2 text-sm font-semibold">
+            End time (optional)
+            <input
+              type="datetime-local"
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+              className="min-h-11 rounded-md border border-[#c8c0b4] px-3 font-normal outline-none transition focus:border-[#1d6f68]"
+            />
+            <span className="text-xs font-normal text-[#5c6763]">
+              Check-in is valid until this time. Empty means no expiry.
+            </span>
           </label>
 
           {formError ? <p className="text-sm text-[#a53e2f]">{formError}</p> : null}

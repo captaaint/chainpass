@@ -1,17 +1,18 @@
-# ChainInvite web
+# ChainInvite Web
 
-Next.js frontend placeholder.
+Next.js frontend for the ChainInvite application.
 
-## Contract
+## Contract Settings
 
 ```env
-NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
+NEXT_PUBLIC_CHAININVITE_ADDRESS=0x...
 NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
+NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=...
 ```
 
-The build plan adds the actual app in section 5 with:
+## Development
 
 ```bash
-npx create-next-app@latest web
+npm install
+npm run dev
 ```

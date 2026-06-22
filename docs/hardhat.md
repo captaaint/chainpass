@@ -1,29 +1,27 @@
 # Hardhat
 
-## Mi ez?
-A **Hardhat** egy fejlesztői környezet smart contractokhoz – a Solidity-fejlesztés "svájci bicskája". Egyetlen eszközben elintézi a **fordítást, tesztelést, lokális blockchain futtatását, a deployt és a debuggolást**. A saját gépeden fut (Node.js-re épül), és TypeScripttel konfigurálható.
+Hardhat is the smart contract development environment used in this project. It compiles Solidity, runs tests, provides local chains, and deploys contracts.
 
-## Miért ezt használjuk?
-- **Mindent egy helyen ad:** nem kell külön eszközöket összerakni.
-- **Beépített lokális hálózat:** azonnali, ingyenes teszteléshez – nem kell hozzá testnet.
-- **Kiváló tesztkörnyezet:** JavaScript/TypeScript tesztek, amik gyorsan futnak és olvashatóak.
-- **Nagy ökoszisztéma és dokumentáció**, kezdőbarát.
+## Why ChainInvite Uses It
 
-## Mi a funkciója a ChainInvite-ban?
-- **Fordítás:** `npx hardhat compile` – a `ChainInvite.sol`-ból gépi kód + ABI lesz.
-- **Tesztelés:** `npx hardhat test` – futtatja a `test/ChainInvite.test.ts` unit teszteket (jogosultságok, egyszer-használatosság, hibás esetek).
-- **Lokális lánc:** villámgyors próbákhoz, mielőtt testnetre mész.
-- **Deploy:** a `scripts/deploy.ts` a [Sepolia](ethereum-sepolia.md) hálózatra tölti fel a contractot.
-- **ABI-forrás:** az `artifacts/` mappából veszi a frontend a contract "használati utasítását".
+- One tool covers compilation, testing, and deployment.
+- Local testing is fast and free.
+- TypeScript support works well with the rest of the project.
 
-## Kulcsfogalmak
-- **compile:** Solidity → EVM bytecode + ABI.
-- **ABI:** JSON leírás arról, milyen függvényei/eseményei vannak a contractnak (a frontend ezt használja).
-- **artifacts/ és cache/:** generált fájlok (gitbe nem kerülnek).
-- **hardhat.config.ts:** itt állítod be a Solidity verziót, a hálózatokat (Sepolia RPC + account).
+## Role in ChainInvite
 
-## Kapcsolódás
-A Hardhat a [Solidity](solidity.md)-kódot kezeli, a [Sepolia](ethereum-sepolia.md)-ra deployol [RPC](ethereum-sepolia.md)-n keresztül, és az általa generált ABI-t használja a [wagmi](wagmi.md)/[viem](viem.md) a frontenden.
+- `npm run compile` compiles Solidity into bytecode and ABI files.
+- `npm test` runs contract tests.
+- `npm run deploy:sepolia` deploys the base contract.
+- `npm run deploy:nft:sepolia` deploys the NFT contract.
+- Generated artifacts provide ABI data for the frontend.
 
-## Hivatalos dokumentáció
+## Key Terms
+
+- ABI: JSON description of contract functions and events.
+- Artifacts: generated build outputs.
+- `hardhat.config.ts`: Solidity and network configuration.
+
+## Official Documentation
+
 - https://hardhat.org/docs/getting-started

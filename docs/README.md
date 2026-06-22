@@ -1,53 +1,39 @@
-# ChainInvite – Technológiai magyarázók
+# ChainInvite Technology Notes
 
-Ez a mappa minden használt technológiához tartalmaz egy külön, kezdőbarát magyarázót:
-**mi ez, miért használjuk pont ezt, és mi a funkciója a ChainInvite projektben.**
+This folder explains the main technologies used by ChainInvite and how they fit together.
 
-## Hogyan illeszkedik össze az egész (1 perces áttekintő)
+## Overview
 
-```
-        ┌─────────────────────────────────────────────┐
-        │  FELHASZNÁLÓ böngészője                       │
-        │                                               │
-        │  Next.js + TypeScript  ── UI (oldalak)        │
-        │      │                                        │
-        │  Tailwind   ── kinézet                        │
-        │      │                                        │
-        │  wagmi      ── React-kapocs a wallethez       │
-        │      │                                        │
-        │  viem       ── alacsony szintű blockchain hív.│
-        │      │                                        │
-        │  MetaMask   ── aláírás + tranzakció jóváhagyás│
-        └──────┼────────────────────────────────────────┘
-               │ RPC (Alchemy/Infura)
-               ▼
-        ┌─────────────────────────────────────────────┐
-        │  SEPOLIA testnet (Ethereum-másolat)           │
-        │     ChainInvite.sol (Solidity smart contract) │
-        └─────────────────────────────────────────────┘
-               ▲
-               │ fordítás / teszt / deploy
-        ┌─────────────────────────────────────────────┐
-        │  Hardhat (fejlesztői környezet, gépeden fut)  │
-        └─────────────────────────────────────────────┘
+```text
+User browser
+  Next.js + TypeScript  -> pages and UI
+  Tailwind CSS          -> styling
+  wagmi                 -> React wallet and contract hooks
+  viem                  -> Ethereum RPC client
+  MetaMask              -> signing and transaction approval
+        |
+        v
+Sepolia testnet
+  ChainInvite contracts
 
-   QR-kód:  qrcode (generálás, vendégoldal)  +  html5-qrcode (olvasás, scanner)
+Hardhat
+  compile, test, and deploy contracts
 ```
 
-## Fájlok
+QR codes are generated with `qrcode` and scanned with `html5-qrcode`.
 
-| Réteg | Technológia | Fájl |
+## Files
+
+| Layer | Technology | File |
 |---|---|---|
-| Smart contract nyelv | Solidity | [solidity.md](solidity.md) |
-| Fejlesztői környezet | Hardhat | [hardhat.md](hardhat.md) |
-| Blockchain / teszthálózat | Ethereum + Sepolia + RPC | [ethereum-sepolia.md](ethereum-sepolia.md) |
+| Smart contract language | Solidity | [solidity.md](solidity.md) |
+| Development environment | Hardhat | [hardhat.md](hardhat.md) |
+| Chain and RPC | Ethereum + Sepolia | [ethereum-sepolia.md](ethereum-sepolia.md) |
 | Wallet | MetaMask | [metamask-wallet.md](metamask-wallet.md) |
-| Frontend keretrendszer | Next.js | [nextjs.md](nextjs.md) |
-| Nyelv (frontend) | TypeScript | [typescript.md](typescript.md) |
-| Wallet/contract React-réteg | wagmi | [wagmi.md](wagmi.md) |
-| Blockchain-kliens könyvtár | viem | [viem.md](viem.md) |
-| Stílus | Tailwind CSS | [tailwind.md](tailwind.md) |
-| QR generálás + olvasás | qrcode / html5-qrcode | [qr-codes.md](qr-codes.md) |
-| NFT-meghívó (V2/V3 irány) | ERC-721 / soulbound | [nft.md](nft.md) |
-
-> Ajánlott olvasási sorrend kezdőként: Ethereum/Sepolia → Solidity → Hardhat → Next.js → TypeScript → viem → wagmi → MetaMask → QR → Tailwind.
+| Frontend framework | Next.js | [nextjs.md](nextjs.md) |
+| Frontend language | TypeScript | [typescript.md](typescript.md) |
+| React wallet layer | wagmi | [wagmi.md](wagmi.md) |
+| RPC client | viem | [viem.md](viem.md) |
+| Styling | Tailwind CSS | [tailwind.md](tailwind.md) |
+| QR codes | qrcode / html5-qrcode | [qr-codes.md](qr-codes.md) |
+| NFT invite direction | ERC-721 / soulbound | [nft.md](nft.md) |

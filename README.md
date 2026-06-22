@@ -1,8 +1,8 @@
 # ChainInvite
 
-Blockchain-alapu esemenymeghivo es QR check-in dApp.
+Blockchain-based event invitations and QR check-in dApp.
 
-ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt hoz letre, vendeg wallet cimeket hiv meg, a vendeg QR-kodot kap, a helyszini scanner pedig on-chain check-int indit. A meghivo egyszer hasznalatos: check-in utan ugyanaz a QR mar ervenytelen.
+ChainInvite is a Sepolia MVP where an organizer wallet creates events, invites guest wallet addresses, guests receive QR codes, and an on-site scanner starts an on-chain check-in. Invites are single-use: after check-in, the same QR code is no longer valid.
 
 ## Stack
 
@@ -14,33 +14,33 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
 - Sepolia testnet
 - MetaMask
 
-## Funkciok
+## Features
 
-- Smart contract esemennyel, meghivottakkal, scanner jogosultsaggal es check-in allapottal
-- Organizer admin felulet:
-  - esemeny letrehozasa
-  - sajat esemenyek listazasa `EventCreated` logokbol
-  - vendeg meghivasa
-  - scanner engedelyezese vagy tiltasa
-  - check-in statusz megjelenitese
-- Vendeg meghivo oldal:
-  - wallet connect
-  - meghivo ervenyesseg ellenorzese
-  - QR-kod generalas
-- Scanner oldal:
-  - kamera alapú QR olvasas localhoston vagy HTTPS-en
-  - QR JSON validalas
-  - `isValidInvite` ellenorzes check-in elott
-  - `checkIn` tranzakcio
-- NFT V2 flow `/nft/admin`, `/nft/invite/[eventId]`, `/nft/scanner/[eventId]` route-okon:
-  - ERC-721 ticket minteles meghivaskor
-  - QR payload `tokenId` mezovel
-  - token tulajdonjog alapú check-in
-  - Etherscan Sepolia token link a vendegoldalon
-- Rossz halozat kezeles Sepolia switch gombbal
-- Tranzakcio pending / success / error allapotok
+- Smart contract with events, invited guests, scanner permissions, and check-in state
+- Organizer admin UI:
+  - create events
+  - list own events
+  - invite guests
+  - allow or revoke scanners
+  - delete events with soft delete
+  - show check-in status
+- Guest invite page:
+  - connect wallet
+  - check invite validity
+  - generate QR code
+- Scanner page:
+  - camera-based QR reading on localhost or HTTPS
+  - QR JSON validation
+  - `isValidInvite` check before check-in
+  - `checkIn` transaction
+- NFT V2 routes under `/nft/admin`, `/nft/invite/[eventId]`, and `/nft/scanner/[eventId]`:
+  - ERC-721 ticket minting on invite
+  - QR payload with `tokenId`
+  - token ownership based check-in
+- Wrong-network handling with Sepolia switch action
+- Transaction pending, success, and error states
 
-## Deployolt Contract
+## Deployed Contract
 
 - Network: Sepolia
 - Chain ID: `11155111`
@@ -48,7 +48,7 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
 - Deployment block: `11097427`
 - Etherscan: https://sepolia.etherscan.io/address/0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
 
-## Deployolt NFT Contract (V2)
+## Deployed NFT Contract
 
 - Network: Sepolia
 - Chain ID: `11155111`
@@ -56,53 +56,24 @@ ChainInvite egy Sepolia testneten futo MVP, ahol egy organizer wallet esemenyt h
 - Deployment block: `11100949`
 - Etherscan: https://sepolia.etherscan.io/address/0x2993789b32cdbee343c3f2ee6371f39e824b6f61
 
-## Demoadatok
+## Install
 
-- Event ID: `1`
-- Event name: `Birthday Party`
-- Organizer: `0x103b57d4B23E1Cdb101bA7bAEbC667C24E4697B0`
-- Guest: `0x719C7E4f50Eb8a66E01AeB140909c9c8350eDaf7`
-
-## Kepernyokepek
-
-### Dashboard
-
-![Dashboard](docs/screenshots/01-dashboard.png)
-
-### Admin
-
-![Admin dashboard](docs/screenshots/02-admin.png)
-
-### Invite
-
-![Invite page](docs/screenshots/03-invite.png)
-
-### Scanner
-
-![Scanner page](docs/screenshots/04-scanner.png)
-
-### Scanner Mobile
-
-![Scanner mobile](docs/screenshots/05-scanner-mobile.png)
-
-## Telepites
-
-Gyoker dependencyk:
+Root dependencies:
 
 ```bash
 npm install
 ```
 
-Frontend dependencyk:
+Frontend dependencies:
 
 ```bash
 cd web
 npm install
 ```
 
-## Env Valtozok
+## Environment Variables
 
-Gyoker `.env`:
+Root `.env`:
 
 ```env
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
@@ -112,36 +83,41 @@ PRIVATE_KEY=0xYOUR_TEST_WALLET_PRIVATE_KEY
 Frontend `web/.env.local`:
 
 ```env
-NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
+NEXT_PUBLIC_CHAININVITE_ADDRESS=0x...
 NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
-NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x2993789b32cdbee343c3f2ee6371f39e824b6f61
-NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=11100949
+NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=...
+NEXT_PUBLIC_CHAININVITE_NFT_ADDRESS=0x...
+NEXT_PUBLIC_CHAININVITE_NFT_DEPLOYMENT_BLOCK=...
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+NEXT_PUBLIC_LOG_BLOCK_RANGE=9999
 ```
 
-Ne commitolj privát kulcsot. A `PRIVATE_KEY` csak tesztwallet legyen.
+Never commit private keys. `PRIVATE_KEY` must only belong to a test wallet.
 
-## Contract Parancsok
+## Contract Commands
 
-Forditas:
+Compile:
 
 ```bash
 npm run compile
 ```
 
-Teszt:
+Test:
 
 ```bash
 npm test
 ```
 
-Deploy Sepoliara:
+Deploy to Sepolia:
 
 ```bash
 npm run deploy:sepolia
+npm run deploy:nft:sepolia
 ```
 
-## Frontend Parancsok
+The deploy scripts print the contract address, deployment transaction, deployment block, and the `.env.local` values to copy.
+
+## Frontend Commands
 
 ```bash
 cd web
@@ -150,17 +126,17 @@ npm run build
 npm run lint
 ```
 
-Fejlesztoi URL:
+Development URL:
 
 ```text
 http://localhost:3000
 ```
 
-## Frontend Deploy Vercelre
+## Vercel Deployment
 
-A Next.js app a `web/` mappaban van, ezert Vercelen a projekt rootja legyen `web`.
+The Next.js app lives in `web/`, so the Vercel project root must be `web`.
 
-CLI deploy:
+CLI deployment:
 
 ```bash
 cd web
@@ -168,15 +144,7 @@ npx vercel login
 npx vercel deploy --prod
 ```
 
-Vercel environment variables:
-
-```env
-NEXT_PUBLIC_CHAININVITE_ADDRESS=0x1fbeac0ceb060d39ab251eb39a0487c0ba2f2c1b
-NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_CHAININVITE_DEPLOYMENT_BLOCK=11097427
-```
-
-Git-alapu deploynal a Vercel Project Settings alatt allitsd be:
+Vercel settings:
 
 - Framework Preset: `Next.js`
 - Root Directory: `web`
@@ -185,36 +153,36 @@ Git-alapu deploynal a Vercel Project Settings alatt allitsd be:
 
 ## Demo Flow
 
-1. Nyisd meg a frontendet: `http://localhost:3000`.
-2. Csatlakoztasd a MetaMask walletet.
-3. Ha a wallet nem Sepolián van, kattints a `Switch to Sepolia` gombra.
+1. Open `http://localhost:3000`.
+2. Connect MetaMask.
+3. Switch to Sepolia if needed.
 4. Organizer flow:
    - `/admin`
    - `/admin/events/new`
-   - hozz letre esemenyt
-   - nyisd meg az esemeny reszleteit
-   - hivj meg egy guest wallet cimet
-   - opcionálisan engedelyezz scanner walletet
+   - create an event
+   - open event details
+   - invite a guest wallet address
+   - optionally allow a scanner wallet
 5. Guest flow:
    - `/invite/1`
-   - csatlakozz a meghivott guest wallettel
-   - ha ervenyes a meghivo, megjelenik a QR
+   - connect with the invited guest wallet
+   - if the invite is valid, the QR code appears
 6. Scanner flow:
    - `/scanner/1`
-   - csatlakozz organizer vagy engedelyezett scanner wallettel
-   - inditsd a kamerat
-   - olvasd be a guest QR-t
-   - kattints a `Check in guest` gombra
-7. Ellenorzes:
-   - ugyanaz a QR check-in utan mar invalid/already used allapotba kerul
-   - az admin esemenyoldalon a vendeg statusza `Checked in`
+   - connect with the organizer or an allowed scanner wallet
+   - start the camera
+   - scan the guest QR code
+   - run check-in
+7. Verification:
+   - the same QR becomes invalid after check-in
+   - the admin event page shows the guest as checked in
 
-## Fontos Megjegyzesek
+## Notes
 
-- A kamera bongeszoben HTTPS-t vagy localhostot igenyel.
-- A contract mappingek nem listazhatok, ezert az admin lista `EventCreated`, `GuestInvited` es `ScannerUpdated` logokbol epul.
-- A log olvasas a deployment blocktol indul, hogy RPC range limitekbe ne fusson bele.
-- A QR payload szandekosan egyszeru JSON:
+- Browser camera access requires HTTPS or localhost.
+- Contract mappings are not iterable, so detail pages reconstruct guest and scanner lists from logs.
+- Log reading starts from the deployment block to avoid unnecessary RPC ranges.
+- The QR payload is intentionally simple JSON:
 
 ```json
 { "eventId": "1", "guest": "0x..." }

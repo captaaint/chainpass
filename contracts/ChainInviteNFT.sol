@@ -15,6 +15,8 @@ contract ChainInviteNFT is ERC721 {
         string name;
         string description;
         uint256 startTime;
+        // endTime is the validity window end as a Unix timestamp. 0 means no expiry.
+        uint256 endTime;
         address organizer;
         bool active;
     }
@@ -32,6 +34,7 @@ contract ChainInviteNFT is ERC721 {
     mapping(uint256 => mapping(address => uint256)) public guestToken;
 
     event EventCreated(uint256 eventId, address organizer, string name, uint256 startTime);
+    event EventDeleted(uint256 eventId, address organizer);
     event GuestInvited(uint256 eventId, address guest);
     event InviteMinted(uint256 eventId, address guest, uint256 tokenId);
     event ScannerUpdated(uint256 eventId, address scanner, bool allowed);
@@ -58,9 +61,12 @@ contract ChainInviteNFT is ERC721 {
     function createEvent(
         string calldata name,
         string calldata description,
-        uint256 startTime
+        uint256 startTime,
+        uint256 endTime
     ) external returns (uint256 eventId) {
         require(bytes(name).length > 0, "name required");
+        // 0 means no expiry. If an end time is set, it cannot be before the start.
+        require(endTime == 0 || endTime >= startTime, "endTime before startTime");
 
         eventCounter++;
         eventId = eventCounter;
@@ -69,6 +75,7 @@ contract ChainInviteNFT is ERC721 {
             name: name,
             description: description,
             startTime: startTime,
+            endTime: endTime,
             organizer: msg.sender,
             active: true
         });
@@ -82,6 +89,8 @@ contract ChainInviteNFT is ERC721 {
         onlyOrganizer(eventId)
         returns (uint256 tokenId)
     {
+        require(events[eventId].active, "event inactive");
+
         tokenId = _mintInvite(eventId, guest);
     }
 
@@ -91,6 +100,7 @@ contract ChainInviteNFT is ERC721 {
         onlyOrganizer(eventId)
     {
         require(guests.length > 0, "guests required");
+        require(events[eventId].active, "event inactive");
 
         for (uint256 i = 0; i < guests.length; i++) {
             _mintInvite(eventId, guests[i]);
@@ -103,6 +113,7 @@ contract ChainInviteNFT is ERC721 {
         onlyOrganizer(eventId)
     {
         require(scanner != address(0), "scanner required");
+        require(events[eventId].active, "event inactive");
 
         scannerAllowed[eventId][scanner] = allowed;
 
@@ -111,6 +122,11 @@ contract ChainInviteNFT is ERC721 {
 
     function checkIn(uint256 eventId, address guest, uint256 tokenId) external eventExists(eventId) {
         Event storage eventData = events[eventId];
+        require(eventData.active, "event inactive");
+        require(
+            eventData.endTime == 0 || block.timestamp <= eventData.endTime,
+            "invite expired"
+        );
 
         require(
             msg.sender == eventData.organizer || scannerAllowed[eventId][msg.sender],
@@ -140,6 +156,14 @@ contract ChainInviteNFT is ERC721 {
         return events[eventId];
     }
 
+    function deleteEvent(uint256 eventId) external eventExists(eventId) onlyOrganizer(eventId) {
+        require(events[eventId].active, "event inactive");
+
+        events[eventId].active = false;
+
+        emit EventDeleted(eventId, msg.sender);
+    }
+
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         address owner = _ownerOf(tokenId);
         require(owner != address(0), "token does not exist");
@@ -166,6 +190,9 @@ contract ChainInviteNFT is ERC721 {
                     '{"trait_type":"Start Time","value":"',
                     eventData.startTime.toString(),
                     '"},',
+                    '{"trait_type":"Valid Until","value":"',
+                    eventData.endTime.toString(),
+                    '"},',
                     '{"trait_type":"Checked In","value":"',
                     checkedInText,
                     '"}',
@@ -175,6 +202,19 @@ contract ChainInviteNFT is ERC721 {
         );
 
         return string.concat("data:application/json;base64,", json);
+    }
+
+    // Soulbound ticket: invite tokens cannot be transferred.
+    // Only minting (from == address(0)) and burning (to == address(0)) are allowed.
+    // OpenZeppelin v5 routes all ownership updates through this _update hook.
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override
+        returns (address)
+    {
+        address from = _ownerOf(tokenId);
+        require(from == address(0) || to == address(0), "token is soulbound");
+        return super._update(to, tokenId, auth);
     }
 
     function _mintInvite(uint256 eventId, address guest) internal returns (uint256 tokenId) {
@@ -201,6 +241,8 @@ contract ChainInviteNFT is ERC721 {
     {
         return
             tokenId != 0 &&
+            events[eventId].active &&
+            (events[eventId].endTime == 0 || block.timestamp <= events[eventId].endTime) &&
             tokenEvent[tokenId] == eventId &&
             _ownerOf(tokenId) == guest &&
             !tokenUsed[tokenId];

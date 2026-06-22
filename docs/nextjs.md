@@ -1,30 +1,26 @@
 # Next.js
 
-## Mi ez?
-A **Next.js** egy React-alapú webes keretrendszer. Megadja a projekt vázát: oldal-routingot (URL → oldal), fejlesztői szervert élő újratöltéssel, build- és deploy-folyamatot. A modern Next.js az **App Router** mintát használja, ahol a `app/` mappa szerkezete adja az URL-eket.
+Next.js is the React framework used for the ChainInvite frontend. The app uses the App Router, where folders under `app/` define routes.
 
-## Miért ezt használjuk?
-- **Gyors indulás:** egy paranccsal kész a teljes frontend-projektváz (`create-next-app`).
-- **Fájl-alapú routing:** a ChainInvite oldalai (`/admin`, `/invite/[eventId]`, `/scanner/[eventId]`) egyszerűen mappákként jönnek létre.
-- **Dinamikus útvonalak:** a `[eventId]` szegmens pont az esemény-azonosítós oldalakhoz kell.
-- **Könnyű deploy:** pár kattintással felmegy Vercelre HTTPS-en (a kamerás scannerhez ez kötelező).
+## Why ChainInvite Uses It
 
-## Mi a funkciója a ChainInvite-ban?
-Ez adja a teljes felhasználói felületet és az oldalstruktúrát:
-- `/admin`, `/admin/events/new`, `/admin/events/[id]` – szervezői dashboard.
-- `/invite/[eventId]` – vendég meghívó oldala QR-kóddal.
-- `/scanner/[eventId]` – beléptető oldal kamerával.
+- It gives a fast TypeScript React setup.
+- File-based routing matches routes like `/admin`, `/invite/[eventId]`, and `/scanner/[eventId]`.
+- It deploys easily to Vercel with HTTPS, which is required for camera access outside localhost.
 
-A blockchain-logikát nem maga a Next.js intézi – ő a "keret", amibe a [wagmi](wagmi.md)/[viem](viem.md) hívásai és a [Tailwind](tailwind.md) stílusok kerülnek.
+## Role in ChainInvite
 
-## Kulcsfogalmak
-- **App Router (`app/` mappa):** mappa = útvonal, `page.tsx` = az adott oldal.
-- **Dinamikus szegmens `[eventId]`:** változó rész az URL-ben.
-- **Client component (`"use client"`):** a wallet- és kamera-interakciókhoz kell, mert ezek a böngészőben futnak.
-- **`npm run dev` / `build`:** fejlesztői szerver / production build.
+- Organizer admin pages.
+- Guest invite pages.
+- Scanner pages.
+- Optional API routes for future cached reads.
 
-## Kapcsolódás
-A Next.js a [TypeScript](typescript.md) nyelven íródik, [Tailwind](tailwind.md)-del stílusozva, és a [wagmi](wagmi.md)-n keresztül beszél a [Sepolia](ethereum-sepolia.md)-n élő contracttal.
+## Key Terms
 
-## Hivatalos dokumentáció
+- App Router: route system based on the `app/` folder.
+- Dynamic segment: a path part like `[eventId]`.
+- Client component: React component that runs in the browser.
+
+## Official Documentation
+
 - https://nextjs.org/docs

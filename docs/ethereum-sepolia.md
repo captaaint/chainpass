@@ -1,31 +1,29 @@
-# Ethereum, Sepolia testnet és az RPC
+# Ethereum, Sepolia, and RPC
 
-## Mi ez?
-Az **Ethereum** egy decentralizált blockchain: egy világméretű, megosztott "adatbázis + számítógép", amit nem egy cég működtet. Programokat (*smart contract*) lehet ráfeltölteni, amik utána mindenki számára ugyanúgy, megváltoztathatatlanul futnak.
+Ethereum is a decentralized blockchain that can run smart contracts. Sepolia is an Ethereum testnet: it behaves like Ethereum, but its ETH has no real value and is used for testing.
 
-A **Sepolia** az Ethereum egyik hivatalos **teszthálózata (testnet)**: ugyanúgy működik, mint az éles Ethereum, de a rajta lévő ETH **értéktelen, ingyenes** (faucetből szerezhető). Hibázni, kísérletezni, újradeployolni következmény nélkül lehet.
+An RPC URL is the endpoint your app uses to talk to the network. It is used to read data, send transactions, and deploy contracts.
 
-Az **RPC URL** (pl. Alchemy vagy Infura) az a "telefonszám", amin keresztül a kódod beszél a hálózattal: ezen küldöd a tranzakciókat és kérdezed le az adatokat. Saját node helyett ingyenes szolgáltatótól kapsz egyet.
+## Why ChainInvite Uses It
 
-## Miért ezt használjuk?
-- **Tanuláshoz ideális:** valódi blockchain-élmény, de nulla pénzügyi kockázat.
-- **Sepolia a jelenleg ajánlott Ethereum testnet**, jól támogatott faucetekkel és eszközökkel.
-- **EVM-kompatibilis:** amit itt megtanulsz, az átvihető bármely más EVM-láncra (Polygon, Base, Arbitrum stb.).
+- Sepolia gives realistic blockchain behavior without financial risk.
+- Sepolia is well supported by wallets, faucets, and explorers.
+- The same EVM concepts transfer to many other chains.
 
-## Mi a funkciója a ChainInvite-ban?
-- Itt **él a deployolt `ChainInvite.sol` szerződés** – ezen tárolódnak az események, meghívók és check-inek.
-- A check-in tranzakciók ide kerülnek, és innen olvassa a frontend a meghívók állapotát.
-- A deployhoz és tranzakciókhoz innen kell **teszt-ETH** (gas fizetésére) és egy **RPC URL**.
+## Role in ChainInvite
 
-## Pár alapfogalom
-- **Gas:** minden állapotváltoztató művelet (írás) díja. Olvasás (`view`) ingyenes.
-- **Tranzakció:** aláírt művelet, ami megváltoztatja a lánc állapotát (pl. egy check-in).
-- **Block explorer:** [sepolia.etherscan.io](https://sepolia.etherscan.io) – itt megnézheted a contractod és tranzakcióid.
-- **Faucet:** ingyenes teszt-ETH-t osztó oldal.
+- Deployed contracts live on Sepolia.
+- Check-in transactions are written to Sepolia.
+- The frontend reads event and invite state through RPC calls.
 
-## Kapcsolódás
-A [viem](viem.md)/[wagmi](wagmi.md) az RPC-n keresztül beszél a Sepoliával; a [Hardhat](hardhat.md) is RPC-n deployol; a [MetaMask](metamask-wallet.md) írja alá a tranzakciókat.
+## Key Terms
 
-## Hivatalos dokumentáció
+- Gas: fee paid for state-changing transactions.
+- Transaction: signed operation that changes chain state.
+- Block explorer: https://sepolia.etherscan.io
+- Faucet: service that gives free test ETH.
+
+## Official Documentation
+
 - https://ethereum.org/developers/docs/
 - https://sepolia.etherscan.io

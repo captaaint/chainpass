@@ -12,14 +12,16 @@ describe("ChainInviteNFT", async function () {
   async function deployWithEvent() {
     const chainInviteNft = await viem.deployContract("ChainInviteNFT");
     const startTime = 1_735_689_600n;
+    const endTime = 4_102_444_800n; // 2100, far enough in the future for tests
 
     await chainInviteNft.write.createEvent([
       "Launch party",
       "Community event",
       startTime,
+      endTime,
     ]);
 
-    return { chainInviteNft, eventId: 1n, startTime };
+    return { chainInviteNft, eventId: 1n, startTime, endTime };
   }
 
   it("deploys with the expected ERC-721 name and symbol", async function () {
@@ -46,6 +48,51 @@ describe("ChainInviteNFT", async function () {
     );
     assert.equal(await chainInviteNft.read.guestToken([eventId, guest.account.address]), 1n);
     assert.equal(await chainInviteNft.read.invited([eventId, guest.account.address]), true);
+  });
+
+  it("allows the organizer to delete an NFT event", async function () {
+    const { chainInviteNft, eventId } = await deployWithEvent();
+
+    await viem.assertions.emitWithArgs(
+      chainInviteNft.write.deleteEvent([eventId]),
+      chainInviteNft,
+      "EventDeleted",
+      [eventId, organizer.account.address],
+    );
+
+    const eventData = await chainInviteNft.read.getEvent([eventId]);
+    assert.equal(eventData.active, false);
+  });
+
+  it("rejects deleting an NFT event from a non-organizer", async function () {
+    const { chainInviteNft, eventId } = await deployWithEvent();
+
+    await viem.assertions.revertWith(
+      chainInviteNft.write.deleteEvent([eventId], {
+        account: stranger.account,
+      }),
+      "not organizer",
+    );
+  });
+
+  it("rejects NFT invite and check-in actions for deleted events", async function () {
+    const { chainInviteNft, eventId } = await deployWithEvent();
+
+    await chainInviteNft.write.inviteGuest([eventId, guest.account.address]);
+    await chainInviteNft.write.deleteEvent([eventId]);
+
+    await viem.assertions.revertWith(
+      chainInviteNft.write.inviteGuest([eventId, secondGuest.account.address]),
+      "event inactive",
+    );
+    await viem.assertions.revertWith(
+      chainInviteNft.write.checkIn([eventId, guest.account.address, 1n]),
+      "event inactive",
+    );
+    assert.equal(
+      await chainInviteNft.read.isValidInvite([eventId, guest.account.address]),
+      false,
+    );
   });
 
   it("stores which event a token belongs to", async function () {
@@ -165,6 +212,62 @@ describe("ChainInviteNFT", async function () {
     assert.equal(
       await chainInviteNft.read.isValidInvite([eventId, guest.account.address]),
       false,
+    );
+  });
+
+  it("blocks transfers because the ticket is soulbound", async function () {
+    const { chainInviteNft, eventId } = await deployWithEvent();
+
+    await chainInviteNft.write.inviteGuest([eventId, guest.account.address]);
+
+    await viem.assertions.revertWith(
+      chainInviteNft.write.transferFrom(
+        [guest.account.address, secondGuest.account.address, 1n],
+        { account: guest.account },
+      ),
+      "token is soulbound",
+    );
+
+    // Ownership stays unchanged.
+    assert.equal(
+      (await chainInviteNft.read.ownerOf([1n])).toLowerCase(),
+      guest.account.address.toLowerCase(),
+    );
+  });
+
+  it("allows check-in when the event has no expiration (endTime = 0)", async function () {
+    const chainInviteNft = await viem.deployContract("ChainInviteNFT");
+    await chainInviteNft.write.createEvent(["No expiry", "desc", 0n, 0n]);
+    await chainInviteNft.write.inviteGuest([1n, guest.account.address]);
+
+    await chainInviteNft.write.checkIn([1n, guest.account.address, 1n]);
+
+    assert.equal(await chainInviteNft.read.tokenUsed([1n]), true);
+  });
+
+  it("rejects check-in after the validity window and reports the invite invalid", async function () {
+    const chainInviteNft = await viem.deployContract("ChainInviteNFT");
+    // endTime = 1 (1970), expired for any realistic chain timestamp.
+    await chainInviteNft.write.createEvent(["Expired", "desc", 0n, 1n]);
+    await chainInviteNft.write.inviteGuest([1n, guest.account.address]);
+
+    assert.equal(
+      await chainInviteNft.read.isValidInvite([1n, guest.account.address]),
+      false,
+    );
+
+    await viem.assertions.revertWith(
+      chainInviteNft.write.checkIn([1n, guest.account.address, 1n]),
+      "invite expired",
+    );
+  });
+
+  it("rejects creating an event with endTime before startTime", async function () {
+    const chainInviteNft = await viem.deployContract("ChainInviteNFT");
+
+    await viem.assertions.revertWith(
+      chainInviteNft.write.createEvent(["Bad window", "desc", 1_000n, 999n]),
+      "endTime before startTime",
     );
   });
 

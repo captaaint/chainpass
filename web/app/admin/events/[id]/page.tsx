@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/page-header";
 import { TransactionStatus } from "@/components/transaction-status";
 import { chainInviteAbi, chainInviteAddress, chainInviteDeploymentBlock } from "@/lib/contract";
 import { formatTimestamp, normalizeAddress } from "@/lib/format";
+import { getContractEventsInBlockRanges } from "@/lib/logs";
 
 type GuestInvite = {
   guest: Address;
@@ -108,22 +109,33 @@ export default function EventDetailsPage() {
       setLogError(null);
 
       try {
+        const latestBlock = await publicClient.getBlockNumber();
         const [inviteLogs, scannerLogs] = await Promise.all([
-          publicClient.getContractEvents({
-            address: chainInviteAddress,
-            abi: chainInviteAbi,
-            eventName: "GuestInvited",
+          getContractEventsInBlockRanges({
             fromBlock: chainInviteDeploymentBlock,
-            toBlock: "latest",
-            strict: true,
+            toBlock: latestBlock,
+            getEvents: ({ fromBlock, toBlock }) =>
+              publicClient.getContractEvents({
+                address: chainInviteAddress,
+                abi: chainInviteAbi,
+                eventName: "GuestInvited",
+                fromBlock,
+                toBlock,
+                strict: true,
+              }),
           }),
-          publicClient.getContractEvents({
-            address: chainInviteAddress,
-            abi: chainInviteAbi,
-            eventName: "ScannerUpdated",
+          getContractEventsInBlockRanges({
             fromBlock: chainInviteDeploymentBlock,
-            toBlock: "latest",
-            strict: true,
+            toBlock: latestBlock,
+            getEvents: ({ fromBlock, toBlock }) =>
+              publicClient.getContractEvents({
+                address: chainInviteAddress,
+                abi: chainInviteAbi,
+                eventName: "ScannerUpdated",
+                fromBlock,
+                toBlock,
+                strict: true,
+              }),
           }),
         ]);
 

@@ -81,6 +81,51 @@ describe("ChainInvite", async function () {
     );
   });
 
+  it("allows the organizer to delete an event", async function () {
+    const { chainInvite, eventId } = await deployWithEvent();
+
+    await viem.assertions.emitWithArgs(
+      chainInvite.write.deleteEvent([eventId]),
+      chainInvite,
+      "EventDeleted",
+      [eventId, organizer.account.address],
+    );
+
+    const eventData = await chainInvite.read.getEvent([eventId]);
+    assert.equal(eventData.active, false);
+  });
+
+  it("rejects deleting an event from a non-organizer", async function () {
+    const { chainInvite, eventId } = await deployWithEvent();
+
+    await viem.assertions.revertWith(
+      chainInvite.write.deleteEvent([eventId], {
+        account: stranger.account,
+      }),
+      "not organizer",
+    );
+  });
+
+  it("rejects invite and check-in actions for deleted events", async function () {
+    const { chainInvite, eventId } = await deployWithEvent();
+
+    await chainInvite.write.inviteGuest([eventId, guest.account.address]);
+    await chainInvite.write.deleteEvent([eventId]);
+
+    await viem.assertions.revertWith(
+      chainInvite.write.inviteGuest([eventId, secondGuest.account.address]),
+      "event inactive",
+    );
+    await viem.assertions.revertWith(
+      chainInvite.write.checkIn([eventId, guest.account.address]),
+      "event inactive",
+    );
+    assert.equal(
+      await chainInvite.read.isValidInvite([eventId, guest.account.address]),
+      false,
+    );
+  });
+
   it("rejects guest invites from a non-organizer", async function () {
     const { chainInvite, eventId } = await deployWithEvent();
 

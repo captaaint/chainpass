@@ -1,32 +1,23 @@
 # Solidity
 
-## Mi ez?
-A **Solidity** a legelterjedtebb programozási nyelv **smart contractok** (okosszerződések) írására Ethereumon és más EVM-láncokon. Statikusan típusos, C++/JavaScript-szerű szintaxisú nyelv, amely közvetlenül a blockchain "számítógépén" (EVM) futó kódra fordul.
+Solidity is the smart contract language used for ChainInvite. It compiles to EVM bytecode and runs on Ethereum-compatible chains.
 
-A smart contract egy olyan program, amely a blockchainen él: az állapota (adatok) ott tárolódik, a logikáját pedig bárki meghívhatja, és mindig ugyanúgy fut – senki nem tudja utólag titokban megváltoztatni.
+## Role in ChainInvite
 
-## Miért ezt használjuk?
-- **De facto szabvány:** a legtöbb tutorial, könyvtár és eszköz Solidityre épül – kezdőként itt találod a legtöbb segítséget.
-- **0.8.x verzió:** beépített túlcsordulás-védelem (overflow check), modern és biztonságos alapok.
-- **EVM-kompatibilis:** ugyanaz a contract sok láncon fut.
+- Store events, guests, check-in status, and scanner permissions.
+- Enforce who can create, invite, scan, and delete.
+- Guarantee single-use invites.
+- Emit events that the frontend can read.
 
-## Mi a funkciója a ChainInvite-ban?
-A teljes üzleti logika Solidityben íródik a `contracts/ChainInvite.sol` fájlba:
-- **Adattárolás:** események (`Event` struct), meghívottak, check-in státusz, scanner-jogosultságok (`mapping`-ekben).
-- **Szabályok:** ki hozhat létre eseményt, ki hívhat meg vendéget, ki check-inelhet (`require` ellenőrzésekkel).
-- **Egyszer-használatosság:** a contract garantálja, hogy egy meghívót csak egyszer lehet beváltani.
-- **Eventek (logok):** minden fontos művelet naplózódik, ebből épül a frontend listázása.
+## Key Concepts
 
-## Kulcsfogalmak, amik itt előjönnek
-- **struct:** több mező egy egységben (pl. egy esemény adatai).
-- **mapping:** kulcs→érték tár (pl. cím → meghívott-e). Nem iterálható!
-- **modifier / require:** jogosultság- és feltétel-ellenőrzés.
-- **event / emit:** napló a frontendnek.
-- **msg.sender:** a függvényt hívó wallet címe – ezen alapul a jogosultság.
-- **view:** állapotot nem módosító, ingyenes olvasófüggvény.
+- `struct`: grouped data fields.
+- `mapping`: key-value storage.
+- `modifier` and `require`: authorization and validation.
+- `event` and `emit`: on-chain logs.
+- `msg.sender`: wallet that called the function.
+- `view`: read-only function.
 
-## Kapcsolódás
-A Solidity-kódot a [Hardhat](hardhat.md) fordítja, teszteli és deployolja a [Sepolia](ethereum-sepolia.md) hálózatra. A frontend a [viem](viem.md)/[wagmi](wagmi.md) révén hívja a függvényeit.
+## Official Documentation
 
-## Hivatalos dokumentáció
 - https://docs.soliditylang.org/

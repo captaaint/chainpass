@@ -28,6 +28,15 @@ export const chainInviteAbi = [
   },
   {
     type: "event",
+    name: "EventDeleted",
+    anonymous: false,
+    inputs: [
+      { name: "eventId", type: "uint256", indexed: false, internalType: "uint256" },
+      { name: "organizer", type: "address", indexed: false, internalType: "address" },
+    ],
+  },
+  {
+    type: "event",
     name: "GuestInvited",
     anonymous: false,
     inputs: [
@@ -156,6 +165,13 @@ export const chainInviteAbi = [
       { name: "eventId", type: "uint256", internalType: "uint256" },
       { name: "guest", type: "address", internalType: "address" },
     ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "deleteEvent",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "eventId", type: "uint256", internalType: "uint256" }],
     outputs: [],
   },
   {

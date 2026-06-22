@@ -73,14 +73,14 @@ export default function Home() {
     if (!isConnected) {
       return {
         label: "Wallet nincs csatlakoztatva",
-        detail: "MetaMask csatlakoztatása szükséges az irasi muveletekhez.",
+        detail: "MetaMask connection is required for write actions.",
         tone: "neutral",
       };
     }
 
     if (!isSepolia) {
       return {
-        label: "Rossz halozat",
+        label: "Wrong network",
         detail: "Valts Sepolia testnetre, hogy a deployolt contractot lasd.",
         tone: "warning",
       };
