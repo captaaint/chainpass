@@ -1,7 +1,7 @@
 {
-  "name": "chainivite",
+  "name": "contracts",
   "version": "1.0.0",
-  "description": "Blockchain-alapu esemenymeghivo es QR check-in dApp.",
+  "description": "ChainInvite smart contracts, tests, and deployment scripts.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,22 +10,9 @@
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "deploy:nft:sepolia": "hardhat run scripts/deploy-nft.ts --network sepolia"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/captaaint/chainivite.git"
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1"
   },
-  "keywords": [
-    "ethereum",
-    "hardhat",
-    "solidity",
-    "dapp"
-  ],
-  "author": "",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/captaaint/chainivite/issues"
-  },
-  "homepage": "https://github.com/captaaint/chainivite#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
     "@types/node": "^26.0.0",
@@ -33,8 +20,5 @@
     "hardhat": "^3.9.0",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^5.6.1"
   }
 }

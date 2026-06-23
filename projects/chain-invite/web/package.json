@@ -4,7 +4,8 @@
   "description": "ChainInvite frontend.",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
@@ -15,6 +16,7 @@
   "type": "module",
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
+    "@wagmi/core": "^3.5.2",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.21.0",
     "next": "^16.2.9",

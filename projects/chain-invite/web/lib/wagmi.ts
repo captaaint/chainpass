@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
+import { injected } from "@wagmi/core";
 import { createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { sepolia } from "wagmi/chains";
 
 const sepoliaRpcUrl =
