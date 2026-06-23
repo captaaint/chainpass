@@ -7,7 +7,7 @@ ChainPass is an on-chain event access and ticketing workspace. It is being split
 | Project | Status | Purpose |
 |---|---|---|
 | [`projects/chain-invite`](projects/chain-invite) | Existing MVP | Wallet-based invitations, QR codes, scanner check-in, and an NFT invite variant on Sepolia |
-| [`projects/chain-events`](projects/chain-events) | Planned MVP | Public paid event ticketing where buyers pay ETH, mint transferable NFT tickets, and use those tickets for check-in |
+| [`projects/chain-events`](projects/chain-events) | Contract MVP | Public paid event ticketing where buyers pay ETH, mint transferable NFT tickets, and use those tickets for check-in |
 
 ## Direction
 
@@ -15,7 +15,7 @@ The original ChainInvite app answers the question: "Can a wallet-based invite be
 
 The next ChainEvents line answers a different question: "Can a paid event make the ticket buyer cover the purchase transaction and receive an NFT ticket that can later be checked in?"
 
-The first ChainEvents milestone will be:
+The first ChainEvents contract milestone includes:
 
 - public paid ticketing
 - organizer-created events
@@ -26,6 +26,8 @@ The first ChainEvents milestone will be:
 - buyer-paid minting through `buyTicket`
 - transferable ERC-721 tickets
 - token-based scanner check-in
+- Hardhat deploy script
+- contract tests covering purchase, transfer, treasury payment, scanner permissions, and check-in
 
 Future milestones may add allowlists, organizer-selected transfer rules, platform fees, refunds, resale flows, or gasless UX.
 
@@ -49,4 +51,11 @@ npm install
 npm run dev
 ```
 
-The `projects/chain-events` project is intentionally only a scaffold in this milestone.
+For the ChainEvents contract MVP:
+
+```bash
+cd projects/chain-events
+npm install
+npm run compile
+npm test
+```
