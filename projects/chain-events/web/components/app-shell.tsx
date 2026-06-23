@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { RadioTower, Wallet } from "lucide-react";
+
+import { WalletStatus } from "@/components/wallet-status";
 
 export interface AppShellProps {
   children: ReactNode;
@@ -37,17 +38,7 @@ export function AppShell({ children, active, admin }: Readonly<AppShellProps>) {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <span className="ce-label inline-flex min-h-10 items-center gap-2 rounded-[var(--ce-radius-lg)] border border-[var(--ce-outline-variant)] bg-[var(--ce-surface-container-low)] px-4">
-              <RadioTower size={16} aria-hidden="true" className="text-[var(--ce-secondary)]" />
-              Sepolia
-              <span className="size-2 rounded-full bg-[var(--ce-success)]" />
-            </span>
-            <span className="ce-label inline-flex min-h-10 items-center gap-2 rounded-[var(--ce-radius)] bg-[var(--ce-primary-container)] px-4 text-[var(--ce-inverse-on-surface)]">
-              <Wallet size={16} aria-hidden="true" />
-              0x12...34
-            </span>
-          </div>
+          <WalletStatus />
         </div>
       </header>
       <main className="mx-auto min-h-[calc(100vh-162px)] w-full max-w-[1920px] px-4 py-8 md:px-8 md:py-10">

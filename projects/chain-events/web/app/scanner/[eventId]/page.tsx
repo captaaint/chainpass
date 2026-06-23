@@ -8,7 +8,7 @@ export default function ScannerPage() {
       <div className="grid gap-7">
         <PageIntro
           title="Ticket Validator"
-          description="Scanning for: Web3 Tech Summit 2024"
+          description="Connect contract data to validate tickets for this event."
         />
         <ScannerConsole />
       </div>

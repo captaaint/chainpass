@@ -11,10 +11,14 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.1",
+    "@wagmi/core": "^3.5.2",
     "lucide-react": "^1.21.0",
     "next": "^16.2.9",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "viem": "^2.53.1",
+    "wagmi": "^3.6.18"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",

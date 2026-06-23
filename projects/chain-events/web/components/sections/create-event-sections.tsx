@@ -1,4 +1,4 @@
-import { Blocks, CirclePlus, CircleCheck, Info, WalletCards } from "lucide-react";
+import { Blocks, CirclePlus, Info, WalletCards } from "lucide-react";
 
 import {
   Button,
@@ -19,16 +19,7 @@ export function CreateEventForm() {
           <Field label="Ticket Price (ETH)" placeholder="0.05" />
           <Field label="Max Ticket Supply" placeholder="500" />
         </div>
-        <Field
-          label="Treasury Wallet Address"
-          defaultValue="0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
-          helper={
-            <span className="inline-flex items-center gap-1">
-              <CircleCheck size={14} aria-hidden="true" />
-              Valid checksum address detected.
-            </span>
-          }
-        />
+        <Field label="Treasury Wallet Address" placeholder="0x..." />
         <div className="border-t border-[var(--ce-outline-variant)] pt-6">
           <Button className="min-h-14 w-full text-lg">
             <CirclePlus size={22} aria-hidden="true" />

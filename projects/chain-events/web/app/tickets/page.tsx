@@ -1,10 +1,6 @@
 import { AppShell } from "@/components/app-shell";
-import {
-  PageIntro,
-  SearchToolbar,
-  TicketPreviewCard,
-} from "@/components/ui/primitives";
-import { tickets } from "@/data/mock-data";
+import { TicketGallery } from "@/components/sections/tickets-sections";
+import { PageIntro, SearchToolbar } from "@/components/ui/primitives";
 
 export default function TicketsPage() {
   return (
@@ -17,20 +13,7 @@ export default function TicketsPage() {
           />
           <SearchToolbar />
         </div>
-        <section className="grid gap-6 lg:grid-cols-3">
-          {tickets.map((ticket) => (
-            <TicketPreviewCard
-              key={ticket.id}
-              title={ticket.title}
-              subtitle={ticket.subtitle}
-              id={ticket.id}
-              badge={ticket.badge}
-              variant={ticket.variant}
-              disabled={ticket.disabled}
-              highlighted={ticket.highlighted}
-            />
-          ))}
-        </section>
+        <TicketGallery />
       </div>
     </AppShell>
   );
