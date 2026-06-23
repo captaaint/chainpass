@@ -27,5 +27,8 @@
   "bugs": {
     "url": "https://github.com/captaaint/chainpass/issues"
   },
-  "homepage": "https://github.com/captaaint/chainpass#readme"
+  "homepage": "https://github.com/captaaint/chainpass#readme",
+  "devDependencies": {
+    "shadcn": "^4.11.0"
+  }
 }
