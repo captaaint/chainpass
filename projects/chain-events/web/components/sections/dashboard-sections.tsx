@@ -19,6 +19,7 @@ function getWalletDataState({
   isError,
   configured,
   compatible,
+  error,
 }: {
   isConnected: boolean;
   isSepolia: boolean;
@@ -26,6 +27,7 @@ function getWalletDataState({
   isError: boolean;
   configured?: boolean;
   compatible?: boolean;
+  error?: string;
 }) {
   if (!isConnected) {
     return {
@@ -65,7 +67,9 @@ function getWalletDataState({
   if (compatible === false) {
     return {
       title: "Contract ABI mismatch",
-      detail: "The configured address does not match the current ChainEvents contract. Check the deployment address in .env.local.",
+      detail:
+        error ??
+        "The configured address does not match the current ChainEvents contract. Check the deployment address in .env.local.",
     };
   }
 
@@ -85,6 +89,7 @@ export function EventsTable() {
     isError: dashboard.isError,
     configured: dashboard.data?.configured,
     compatible: dashboard.data?.compatible,
+    error: dashboard.data?.error,
   });
 
   return (
@@ -150,6 +155,7 @@ export function ScannerAssignments() {
     isError: dashboard.isError,
     configured: dashboard.data?.configured,
     compatible: dashboard.data?.compatible,
+    error: dashboard.data?.error,
   });
 
   return (
@@ -212,6 +218,7 @@ export function DashboardTicketStack() {
     isError: dashboard.isError,
     configured: dashboard.data?.configured,
     compatible: dashboard.data?.compatible,
+    error: dashboard.data?.error,
   });
 
   return (

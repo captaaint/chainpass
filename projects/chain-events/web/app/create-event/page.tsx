@@ -20,8 +20,8 @@ export default function CreateEventPage() {
           Back to Dashboard
         </Link>
         <PageIntro
-          title="Create Paid Event"
-          description="Deploy a new event contract and configure on-chain ticketing parameters."
+          title="Create Event"
+          description="Register a new on-chain event and configure organizer-controlled access passes."
         />
         <section className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_380px]">
           <CreateEventForm />

@@ -24,3 +24,4 @@ projects/*/web/.next
 projects/*/web/node_modules
 projects/*/web/.env.local
 projects/*/web/.chaininvite-cache.json
+FEATURE_REQUEST_PROMPT.md

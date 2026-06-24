@@ -16,6 +16,11 @@ const receipt = await publicClient.waitForTransactionReceipt({
   hash: deploymentTransaction.hash,
 });
 
-console.log("ChainEvents contract address:", chainEvents.address);
+console.log("ChainInviteNFT contract address:", chainEvents.address);
 console.log("Deployment transaction:", deploymentTransaction.hash);
 console.log("Deployment block:", receipt.blockNumber.toString());
+console.log("");
+console.log("Copy these values into ../web/.env.local:");
+console.log(`NEXT_PUBLIC_CHAIN_EVENTS_ADDRESS=${chainEvents.address}`);
+console.log("NEXT_PUBLIC_CHAIN_ID=11155111");
+console.log(`NEXT_PUBLIC_CHAIN_EVENTS_DEPLOYMENT_BLOCK=${receipt.blockNumber.toString()}`);

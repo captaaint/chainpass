@@ -26,6 +26,18 @@ const serverRpcUrl =
 
 const logBlockRange = BigInt(process.env.LOG_BLOCK_RANGE ?? "9999");
 const indexConfirmations = BigInt(process.env.INDEX_CONFIRMATIONS ?? "5");
+const chainInviteProbeAbi = [
+  {
+    type: "function",
+    name: "isValidInvite",
+    stateMutability: "view",
+    inputs: [
+      { name: "eventId", type: "uint256" },
+      { name: "guest", type: "address" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
 
 type EventDataTuple = readonly [
   string,
@@ -129,11 +141,26 @@ export async function GET(request: Request) {
       functionName: "nextTokenId",
     });
   } catch {
+    let mismatchDetail =
+      "Configured address does not match the current ChainEvents ABI. Check NEXT_PUBLIC_CHAIN_EVENTS_ADDRESS.";
+
+    try {
+      await publicClient.readContract({
+        address: chainEventsAddress,
+        abi: chainInviteProbeAbi,
+        functionName: "isValidInvite",
+        args: [BigInt(1), "0x0000000000000000000000000000000000000001"],
+      });
+      mismatchDetail =
+        "Configured address does not match the current ChainEvents ABI. Check NEXT_PUBLIC_CHAIN_EVENTS_ADDRESS.";
+    } catch {
+      // Keep the generic ABI mismatch detail when the address is not identifiable.
+    }
+
     return NextResponse.json({
       ...emptyData,
       compatible: false,
-      error:
-        "Configured address does not match the current ChainEvents ABI. Check NEXT_PUBLIC_CHAIN_EVENTS_ADDRESS.",
+      error: mismatchDetail,
       latestBlock: latestBlock.toString(),
       fromBlock: chainEventsDeploymentBlock.toString(),
     } satisfies DashboardData);
