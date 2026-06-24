@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType, CSSProperties, ReactNode } from "react";
 import {
   BadgeCheck,
   CalendarDays,
@@ -67,6 +67,7 @@ export interface ButtonProps {
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
+  style?: CSSProperties;
   tone?: "primary" | "secondary" | "danger";
   type?: "button" | "submit";
 }
@@ -76,6 +77,7 @@ export function Button({
   className,
   disabled,
   onClick,
+  style,
   tone = "primary",
   type = "button",
 }: Readonly<ButtonProps>) {
@@ -84,6 +86,7 @@ export function Button({
       type={type}
       disabled={disabled}
       onClick={onClick}
+      style={style}
       className={cx(
         "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--ce-radius)] px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ce-secondary)] disabled:opacity-50",
         tone === "primary" &&
@@ -104,6 +107,7 @@ export interface ButtonLinkProps {
   children: ReactNode;
   href: string;
   className?: string;
+  style?: CSSProperties;
   tone?: "primary" | "secondary";
 }
 
@@ -111,11 +115,13 @@ export function ButtonLink({
   children,
   href,
   className,
+  style,
   tone = "primary",
 }: Readonly<ButtonLinkProps>) {
   return (
     <Link
       href={href}
+      style={style}
       className={cx(
         "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--ce-radius)] px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ce-secondary)]",
         tone === "primary" &&
@@ -322,13 +328,10 @@ export function TicketPreviewCard({
         </div>
         <div className="mt-4 grid gap-2 border-t border-dashed border-[var(--ce-outline-variant)] pt-4">
           {detailsHref ? (
-            <Link
-              href={detailsHref}
-              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--ce-radius)] bg-[var(--ce-secondary)] px-4 text-sm font-semibold text-[var(--ce-on-secondary)] transition hover:bg-[var(--ce-on-secondary-container)]"
-            >
+            <span className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--ce-radius)] bg-[var(--ce-secondary)] px-4 text-sm font-semibold text-[var(--ce-on-secondary)] transition hover:bg-[var(--ce-on-secondary-container)]">
               <QrCode size={16} aria-hidden="true" />
               View Ticket Details
-            </Link>
+            </span>
           ) : (
             <Button className="w-full" disabled={disabled}>
               <QrCode size={16} aria-hidden="true" />

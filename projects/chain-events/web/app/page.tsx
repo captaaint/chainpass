@@ -16,8 +16,12 @@ export default function DashboardPage() {
           title="Dashboard"
           description="Manage your events, tickets, and scanning permissions."
           action={
-            <ButtonLink href="/create-event" className="min-h-14 px-7 text-lg">
-              <CirclePlus size={22} aria-hidden="true" />
+            <ButtonLink
+              href="/create-event"
+              className="min-h-14 px-7 text-lg"
+              style={{ color: "#fff" }}
+            >
+              <CirclePlus size={22} aria-hidden="true" color="currentColor" />
               Create Paid Event
             </ButtonLink>
           }

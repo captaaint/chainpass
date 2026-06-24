@@ -241,13 +241,17 @@ export async function GET(request: Request) {
     await Promise.all(organizedEventIds.map((eventId) => readEvent(eventId)))
   ).filter((event): event is ChainEventRecord => Boolean(event));
 
-  const purchasedTokenIds = [
-    ...new Set(
-      ticketEvents
-        .map((log) => log.args.tokenId)
-        .filter((tokenId): tokenId is bigint => typeof tokenId === "bigint"),
-    ),
-  ];
+  const loggedTokenIds = ticketEvents
+    .map((log) => log.args.tokenId)
+    .filter((tokenId): tokenId is bigint => typeof tokenId === "bigint");
+  const nextTokenId = await publicClient.readContract({
+    address: chainEventsAddress,
+    abi: chainEventsAbi,
+    functionName: "nextTokenId",
+  });
+  const mintedTokenCount = nextTokenId > BigInt(1) ? Number(nextTokenId - BigInt(1)) : 0;
+  const liveTokenIds = Array.from({ length: mintedTokenCount }, (_, index) => BigInt(index + 1));
+  const purchasedTokenIds = [...new Set([...loggedTokenIds, ...liveTokenIds])];
 
   const tickets: TicketRecord[] = [];
   for (const tokenId of purchasedTokenIds) {

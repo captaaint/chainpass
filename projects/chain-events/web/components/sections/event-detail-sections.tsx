@@ -512,6 +512,8 @@ export function PurchasePanel({
   const [isSimulating, setIsSimulating] = useState(false);
   const status = event ? getEventStatus(event) : "Unavailable";
   const purchaseBlocker = event ? getPurchaseBlocker(event) : "Event details are not loaded.";
+  const isOrganizer =
+    Boolean(event && address) && event?.organizer.toLowerCase() === address?.toLowerCase();
   const ownedTicket = event
     ? dashboard.data?.tickets.find((ticket) => ticket.eventId === event.id)
     : undefined;
@@ -605,77 +607,79 @@ export function PurchasePanel({
           {status}
         </Badge>
       </div>
-      <Panel emphasis="strong" className="p-7">
-        <h2 className="text-2xl font-semibold">Secure Ticket</h2>
-        <div className="mt-8 grid gap-5 text-base">
-          <div className="flex justify-between border-b border-[var(--ce-outline-variant)] pb-4">
-            <span className="text-[var(--ce-on-surface-variant)]">Standard Ticket</span>
-            <span className="ce-label">
-              {event ? `${formatEther(BigInt(event.ticketPrice))} ETH` : "-- ETH"}
-            </span>
+      {!isOrganizer ? (
+        <Panel emphasis="strong" className="p-7">
+          <h2 className="text-2xl font-semibold">Secure Ticket</h2>
+          <div className="mt-8 grid gap-5 text-base">
+            <div className="flex justify-between border-b border-[var(--ce-outline-variant)] pb-4">
+              <span className="text-[var(--ce-on-surface-variant)]">Standard Ticket</span>
+              <span className="ce-label">
+                {event ? `${formatEther(BigInt(event.ticketPrice))} ETH` : "-- ETH"}
+              </span>
+            </div>
+            <div className="flex justify-between border-b border-[var(--ce-outline-variant)] pb-4">
+              <span className="text-[var(--ce-on-surface-variant)]">Estimated Gas</span>
+              <span className="ce-label text-[var(--ce-secondary)]">Wallet estimates at signing</span>
+            </div>
+            <div className="flex justify-between font-semibold">
+              <span>Total Cost</span>
+              <span>{event ? `${formatEther(BigInt(event.ticketPrice))} ETH + gas` : "Unavailable"}</span>
+            </div>
           </div>
-          <div className="flex justify-between border-b border-[var(--ce-outline-variant)] pb-4">
-            <span className="text-[var(--ce-on-surface-variant)]">Estimated Gas</span>
-            <span className="ce-label text-[var(--ce-secondary)]">Wallet estimates at signing</span>
-          </div>
-          <div className="flex justify-between font-semibold">
-            <span>Total Cost</span>
-            <span>{event ? `${formatEther(BigInt(event.ticketPrice))} ETH + gas` : "Unavailable"}</span>
-          </div>
-        </div>
-        {isConnected && !isSepolia ? (
-          <Button
-            tone="secondary"
-            className="mt-8 min-h-12 w-full"
-            disabled={isSwitchPending}
-            onClick={() => switchChain({ chainId: sepolia.id })}
-          >
-            {isSwitchPending ? "Switching" : "Switch to Sepolia"}
-          </Button>
-        ) : null}
-        <Button
-          className="mt-8 min-h-14 w-full text-lg"
-          disabled={Boolean(purchaseBlocker) || isBuySignaturePending || isBuyConfirming || isSimulating}
-          onClick={handleBuyTicket}
-        >
-          <ShoppingCart size={20} aria-hidden="true" />
-          {isSimulating
-            ? "Simulating"
-            : isBuySignaturePending
-              ? "Confirm in Wallet"
-              : isBuyConfirming
-                ? "Confirming"
-                : "Buy Ticket"}
-        </Button>
-        <p className="mt-5 text-center text-sm text-[var(--ce-on-surface-variant)]">
-          Buyer pays ticket price plus gas. The ticket price is sent to the event treasury.
-        </p>
-        {ownedTicket ? (
-          <StatusCallout title="Ticket already owned" tone="success">
-            You already own ticket #{ownedTicket.tokenId} for this event. If the event has not
-            started yet, your ticket will become valid during the event window.
-            <ButtonLink
-              href={`/tickets/${ownedTicket.tokenId}`}
+          {isConnected && !isSepolia ? (
+            <Button
               tone="secondary"
-              className="mt-4 w-full"
+              className="mt-8 min-h-12 w-full"
+              disabled={isSwitchPending}
+              onClick={() => switchChain({ chainId: sepolia.id })}
             >
-              View My Ticket
-            </ButtonLink>
-          </StatusCallout>
-        ) : purchaseBlocker ? (
-          <StatusCallout title="Purchase unavailable" tone="warning">
-            {purchaseBlocker}
-          </StatusCallout>
-        ) : null}
-        <div className="mt-5">
-          <TransactionStatus
-            hash={buyHash}
-            isConfirming={isBuySignaturePending || isBuyConfirming || isSimulating}
-            isSuccess={isBuySuccess}
-            error={buyError}
-          />
-        </div>
-      </Panel>
+              {isSwitchPending ? "Switching" : "Switch to Sepolia"}
+            </Button>
+          ) : null}
+          <Button
+            className="mt-8 min-h-14 w-full text-lg"
+            disabled={Boolean(purchaseBlocker) || isBuySignaturePending || isBuyConfirming || isSimulating}
+            onClick={handleBuyTicket}
+          >
+            <ShoppingCart size={20} aria-hidden="true" />
+            {isSimulating
+              ? "Simulating"
+              : isBuySignaturePending
+                ? "Confirm in Wallet"
+                : isBuyConfirming
+                  ? "Confirming"
+                  : "Buy Ticket"}
+          </Button>
+          <p className="mt-5 text-center text-sm text-[var(--ce-on-surface-variant)]">
+            Buyer pays ticket price plus gas. The ticket price is sent to the event treasury.
+          </p>
+          {ownedTicket ? (
+            <StatusCallout title="Ticket already owned" tone="success">
+              You already own ticket #{ownedTicket.tokenId} for this event. If the event has not
+              started yet, your ticket will become valid during the event window.
+              <ButtonLink
+                href={`/tickets/${ownedTicket.tokenId}`}
+                tone="secondary"
+                className="mt-4 w-full"
+              >
+                View My Ticket
+              </ButtonLink>
+            </StatusCallout>
+          ) : purchaseBlocker ? (
+            <StatusCallout title="Purchase unavailable" tone="warning">
+              {purchaseBlocker}
+            </StatusCallout>
+          ) : null}
+          <div className="mt-5">
+            <TransactionStatus
+              hash={buyHash}
+              isConfirming={isBuySignaturePending || isBuyConfirming || isSimulating}
+              isSuccess={isBuySuccess}
+              error={buyError}
+            />
+          </div>
+        </Panel>
+      ) : null}
       <Panel className="bg-[var(--ce-surface-container-low)] p-6">
         <p className="ce-label uppercase text-[var(--ce-on-surface-variant)]">Contract Information</p>
         <dl className="mt-5 grid gap-5">

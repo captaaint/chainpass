@@ -298,8 +298,12 @@ export function CreateEventForm() {
         />
 
         <div className="grid gap-3 border-t border-[var(--ce-outline-variant)] pt-6">
-          <Button type="submit" disabled={!canSubmit} className="min-h-14 w-full text-lg">
-            <CirclePlus size={22} aria-hidden="true" />
+          <Button
+            type="submit"
+            disabled={!canSubmit}
+            className="min-h-14 w-full text-lg white"
+          >
+            <CirclePlus size={22} aria-hidden="true" color="currentColor" />
             {isSignaturePending ? "Confirm in Wallet" : isConfirming ? "Creating Event" : "Create Event"}
           </Button>
           {!isConnected ? (
