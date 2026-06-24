@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -10,7 +10,17 @@ import {
   Ticket,
   WalletCards,
 } from "lucide-react";
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
+import { sepolia } from "wagmi/chains";
 
+import { TransactionStatus } from "@/components/transaction-status";
 import {
   Badge,
   Button,
@@ -28,8 +38,61 @@ import {
   getEventStatus,
   shortenAddress,
 } from "@/lib/chain-events-format";
+import {
+  chainEventsAbi,
+  chainEventsAddress,
+} from "@/lib/contract";
 
 const emptyEvents: ChainEventRecord[] = [];
+type EventDataTuple = readonly [
+  string,
+  string,
+  bigint,
+  bigint,
+  bigint,
+  bigint,
+  bigint,
+  `0x${string}`,
+  `0x${string}`,
+  boolean,
+];
+type EventDataObject = {
+  name: string;
+  description: string;
+  startTime: bigint;
+  endTime: bigint;
+  ticketPrice: bigint;
+  maxSupply: bigint;
+  sold: bigint;
+  organizer: `0x${string}`;
+  treasury: `0x${string}`;
+  active: boolean;
+};
+type EventData = EventDataTuple | EventDataObject;
+
+function getEventField<T>(eventData: EventData, index: number, key: keyof EventDataObject) {
+  return (
+    Array.isArray(eventData)
+      ? (eventData as EventDataTuple)[index]
+      : (eventData as EventDataObject)[key]
+  ) as T;
+}
+
+function eventFromData(id: bigint, eventData: EventData): ChainEventRecord {
+  return {
+    id: id.toString(),
+    name: getEventField<string>(eventData, 0, "name"),
+    description: getEventField<string>(eventData, 1, "description"),
+    startTime: getEventField<bigint>(eventData, 2, "startTime").toString(),
+    endTime: getEventField<bigint>(eventData, 3, "endTime").toString(),
+    ticketPrice: getEventField<bigint>(eventData, 4, "ticketPrice").toString(),
+    maxSupply: getEventField<bigint>(eventData, 5, "maxSupply").toString(),
+    sold: getEventField<bigint>(eventData, 6, "sold").toString(),
+    organizer: getEventField<`0x${string}`>(eventData, 7, "organizer"),
+    treasury: getEventField<`0x${string}`>(eventData, 8, "treasury"),
+    active: getEventField<boolean>(eventData, 9, "active"),
+  };
+}
 
 function isSoldOut(event: ChainEventRecord) {
   return BigInt(event.sold) >= BigInt(event.maxSupply);
@@ -114,6 +177,141 @@ function getListState({
     title: "No tickets available",
     detail: "No active, unsold ChainEvents tickets were found from indexed event logs.",
   };
+}
+
+function QuickBuyButton({
+  event,
+  blocker,
+  onPurchased,
+}: Readonly<{
+  event: ChainEventRecord;
+  blocker: string | null;
+  onPurchased: () => unknown;
+}>) {
+  const publicClient = usePublicClient({ chainId: sepolia.id });
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const isSepolia = chainId === sepolia.id;
+  const { switchChain, isPending: isSwitchPending } = useSwitchChain();
+  const {
+    data: buyHash,
+    error: buyWriteError,
+    isPending: isBuySignaturePending,
+    writeContract: writeBuy,
+  } = useWriteContract();
+  const {
+    isLoading: isBuyConfirming,
+    isSuccess: isBuySuccess,
+    error: buyReceiptError,
+  } = useWaitForTransactionReceipt({ hash: buyHash, chainId: sepolia.id });
+  const [buyFormError, setBuyFormError] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const buyError = useMemo(() => {
+    if (buyFormError) {
+      return new Error(buyFormError);
+    }
+
+    return buyWriteError ?? buyReceiptError ?? null;
+  }, [buyFormError, buyReceiptError, buyWriteError]);
+  const isBusy = isBuySignaturePending || isBuyConfirming || isSimulating || isSwitchPending;
+
+  useEffect(() => {
+    if (isBuySuccess) {
+      onPurchased();
+    }
+  }, [isBuySuccess, onPurchased]);
+
+  async function handleQuickBuy() {
+    setBuyFormError(null);
+
+    if (!isConnected || !address) {
+      setBuyFormError("Connect MetaMask before buying a ticket.");
+      return;
+    }
+
+    if (!isSepolia) {
+      switchChain({ chainId: sepolia.id });
+      return;
+    }
+
+    if (!publicClient) {
+      setBuyFormError("Sepolia RPC client is not ready.");
+      return;
+    }
+
+    setIsSimulating(true);
+
+    try {
+      const eventId = BigInt(event.id);
+      const eventData = (await publicClient.readContract({
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "getEvent",
+        args: [eventId],
+      })) as EventData;
+      const freshEvent = eventFromData(eventId, eventData);
+      const freshBlocker = getPurchaseBlocker(freshEvent, Math.floor(Date.now() / 1000));
+
+      if (freshBlocker) {
+        setBuyFormError(freshBlocker);
+        return;
+      }
+
+      const ticketPrice = BigInt(freshEvent.ticketPrice);
+
+      await publicClient.simulateContract({
+        account: address,
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "buyTicket",
+        args: [eventId],
+        value: ticketPrice,
+      });
+
+      writeBuy({
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "buyTicket",
+        args: [eventId],
+        value: ticketPrice,
+        chainId: sepolia.id,
+      });
+    } catch (error) {
+      setBuyFormError(error instanceof Error ? error.message : "Ticket purchase simulation failed.");
+    } finally {
+      setIsSimulating(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2">
+      <Button
+        className="min-h-12 w-full"
+        disabled={Boolean(blocker) || isBusy}
+        onClick={handleQuickBuy}
+      >
+        <ShoppingCart size={17} aria-hidden="true" />
+        {isSimulating
+          ? "Simulating"
+          : isBuySignaturePending
+            ? "Confirm in Wallet"
+            : isBuyConfirming
+              ? "Confirming"
+              : isConnected && !isSepolia
+                ? "Switch to Sepolia"
+                : "Quick Buy"}
+      </Button>
+      <p className="ce-label text-center text-[var(--ce-on-surface-variant)]">
+        Pays {formatEthPrice(event.ticketPrice)} + gas.
+      </p>
+      <TransactionStatus
+        hash={buyHash}
+        isConfirming={isBusy}
+        isSuccess={isBuySuccess}
+        error={buyError}
+      />
+    </div>
+  );
 }
 
 export function EventsListingContent() {
@@ -241,14 +439,22 @@ export function EventsListingContent() {
 
                 {startsInFuture ? (
                   <p className="rounded-[var(--ce-radius)] bg-[var(--ce-info-container)] px-4 py-3 text-sm leading-6 text-[var(--ce-info)]">
-                    This event starts {formatEventDateTime(event.startTime)}. Ticket purchase is
-                    available from the event details page.
+                    This event starts {formatEventDateTime(event.startTime)}. Tickets can be bought
+                    now; check-in opens during the event window.
                   </p>
                 ) : null}
 
                 <div className="grid gap-3 border-t border-[var(--ce-outline-variant)] pt-5">
-                  <ButtonLink href={`/events/${event.id}`} className="min-h-12 w-full">
-                    <ShoppingCart size={17} aria-hidden="true" />
+                  <QuickBuyButton
+                    event={event}
+                    blocker={blocker}
+                    onPurchased={eventsQuery.refetch}
+                  />
+                  <ButtonLink
+                    href={`/events/${event.id}`}
+                    className="min-h-12 w-full !text-white"
+                  >
+                    <Ticket size={17} aria-hidden="true" className="!text-white" />
                     View Event
                   </ButtonLink>
                   <p className="ce-label text-center text-[var(--ce-on-surface-variant)]">
