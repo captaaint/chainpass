@@ -197,9 +197,18 @@ export function EventHero({
 
   return (
     <Panel className="p-8 md:p-10">
-      <h1 className="text-[34px] font-bold leading-[42px] tracking-[-0.02em]">
-        {event.name}
-      </h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-[34px] font-bold leading-[42px] tracking-[-0.02em]">
+          {event.name}
+        </h1>
+        {!event.active ? <Badge tone="neutral">Deactivated</Badge> : null}
+      </div>
+      {!event.active ? (
+        <StatusCallout title="Event deactivated" tone="warning">
+          This event has been deactivated. Purchases, scanner updates, and check-in are blocked by
+          the contract.
+        </StatusCallout>
+      ) : null}
       <div className="mt-6 flex flex-wrap gap-6 text-base text-[var(--ce-on-surface-variant)]">
         <span className="inline-flex items-center gap-3">
           <CalendarDays size={22} aria-hidden="true" className="text-[var(--ce-secondary)]" />
@@ -315,6 +324,7 @@ export function OrganizerControls({
   } = useWaitForTransactionReceipt({ hash: deleteHash, chainId: sepolia.id });
   const isOrganizer =
     Boolean(event && address) && event?.organizer.toLowerCase() === address?.toLowerCase();
+  const isEventActive = Boolean(event?.active);
   const scannerError = useMemo(() => {
     if (scannerFormError) {
       return new Error(scannerFormError);
@@ -429,7 +439,7 @@ export function OrganizerControls({
           </label>
           <Button
             className="mt-5 w-full"
-            disabled={!isConnected || !isOrganizer || isScannerSignaturePending || isScannerConfirming}
+            disabled={!isConnected || !isOrganizer || !isEventActive || isScannerSignaturePending || isScannerConfirming}
             onClick={handleScannerUpdate}
           >
             {isScannerSignaturePending
@@ -439,9 +449,11 @@ export function OrganizerControls({
                 : "Update Scanner"}
           </Button>
           <p className="mt-4 text-sm text-[var(--ce-on-surface-variant)]">
-            {isOrganizer
-              ? "Organizer wallets can grant or revoke scanner permissions for this event."
-              : "Connect as the organizer wallet to manage scanner permissions."}
+            {!isEventActive
+              ? "This event is deactivated, so scanner permissions can no longer be updated."
+              : isOrganizer
+                ? "Organizer wallets can grant or revoke scanner permissions for this event."
+                : "Connect as the organizer wallet to manage scanner permissions."}
           </p>
           <div className="mt-4">
             <TransactionStatus
@@ -452,33 +464,35 @@ export function OrganizerControls({
             />
           </div>
         </Panel>
-        <Panel className="p-5">
-          <p className="ce-label uppercase text-[var(--ce-on-surface-variant)]">Danger Zone</p>
-          <p className="mt-4 text-sm text-[var(--ce-on-surface-variant)]">
-            Deactivation marks the event inactive. Purchases, scanner updates, and check-in will
-            be blocked by the contract.
-          </p>
-          <Button
-            tone="danger"
-            className="mt-8 w-full"
-            disabled={!isConnected || !isOrganizer || isDeleteSignaturePending || isDeleteConfirming}
-            onClick={handleDeleteEvent}
-          >
-            {isDeleteSignaturePending
-              ? "Confirm in Wallet"
-              : isDeleteConfirming
-                ? "Deactivating"
-                : "Deactivate Event"}
-          </Button>
-          <div className="mt-4">
-            <TransactionStatus
-              hash={deleteHash}
-              isConfirming={isDeleteSignaturePending || isDeleteConfirming}
-              isSuccess={isDeleteSuccess}
-              error={deleteError}
-            />
-          </div>
-        </Panel>
+        {isEventActive ? (
+          <Panel className="p-5">
+            <p className="ce-label uppercase text-[var(--ce-on-surface-variant)]">Danger Zone</p>
+            <p className="mt-4 text-sm text-[var(--ce-on-surface-variant)]">
+              Deactivation marks the event inactive. Purchases, scanner updates, and check-in will
+              be blocked by the contract.
+            </p>
+            <Button
+              tone="danger"
+              className="mt-8 w-full"
+              disabled={!isConnected || !isOrganizer || isDeleteSignaturePending || isDeleteConfirming}
+              onClick={handleDeleteEvent}
+            >
+              {isDeleteSignaturePending
+                ? "Confirm in Wallet"
+                : isDeleteConfirming
+                  ? "Deactivating"
+                  : "Deactivate Event"}
+            </Button>
+            <div className="mt-4">
+              <TransactionStatus
+                hash={deleteHash}
+                isConfirming={isDeleteSignaturePending || isDeleteConfirming}
+                isSuccess={isDeleteSuccess}
+                error={deleteError}
+              />
+            </div>
+          </Panel>
+        ) : null}
       </div>
     </Panel>
   );

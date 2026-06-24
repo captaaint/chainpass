@@ -315,12 +315,22 @@ function QuickBuyButton({
 }
 
 export function EventsListingContent() {
+  const { address } = useAccount();
   const [searchTerm, setSearchTerm] = useState("");
 
   const eventsQuery = useQuery({
-    queryKey: ["chain-events-available-events"],
+    queryKey: ["chain-events-available-events", address],
     queryFn: async () => {
-      const response = await fetch("/api/chain-events/events", { cache: "no-store" });
+      const searchParams = new URLSearchParams();
+
+      if (address) {
+        searchParams.set("address", address);
+      }
+
+      const response = await fetch(
+        `/api/chain-events/events${searchParams.size > 0 ? `?${searchParams}` : ""}`,
+        { cache: "no-store" },
+      );
 
       if (!response.ok) {
         throw new Error(await response.text());

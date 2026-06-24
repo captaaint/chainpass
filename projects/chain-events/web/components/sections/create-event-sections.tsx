@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blocks, CirclePlus, Info, WalletCards } from "lucide-react";
-import { isAddress, parseEther, type Address } from "viem";
+import { decodeEventLog, isAddress, parseEther, type Address } from "viem";
 import {
   useAccount,
   useChainId,
@@ -48,6 +49,7 @@ function FieldShell({
 }
 
 export function CreateEventForm() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -69,10 +71,12 @@ export function CreateEventForm() {
     writeContract,
   } = useWriteContract();
   const {
+    data: receipt,
     isLoading: isConfirming,
     isSuccess,
     error: receiptError,
   } = useWaitForTransactionReceipt({ hash, chainId: sepolia.id });
+  const navigatedReceiptHash = useRef<string | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -102,12 +106,31 @@ export function CreateEventForm() {
   }, [formError, receiptError, writeError]);
 
   useEffect(() => {
-    if (!isSuccess) {
+    if (!isSuccess || !receipt || navigatedReceiptHash.current === receipt.transactionHash) {
       return;
     }
 
     void queryClient.invalidateQueries({ queryKey: ["chain-events-dashboard", address] });
-  }, [address, isSuccess, queryClient]);
+    void queryClient.invalidateQueries({ queryKey: ["chain-events-available-events"] });
+
+    for (const log of receipt.logs) {
+      try {
+        const decodedLog = decodeEventLog({
+          abi: chainEventsAbi,
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decodedLog.eventName === "EventCreated") {
+          navigatedReceiptHash.current = receipt.transactionHash;
+          router.push(`/events/${decodedLog.args.eventId.toString()}`);
+          return;
+        }
+      } catch {
+        // Ignore logs from other contracts in the same receipt.
+      }
+    }
+  }, [address, isSuccess, queryClient, receipt, router]);
 
   function validateForm() {
     if (!hasChainEventsAddress) {

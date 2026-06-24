@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, type Address, type Log } from "viem";
+import { createPublicClient, http, isAddress, type Address, type Log } from "viem";
 import { sepolia } from "viem/chains";
 
 import {
@@ -48,7 +48,10 @@ type EventDataObject = {
 };
 type EventData = EventDataTuple | EventDataObject;
 type CreatedLog = { args: { eventId?: bigint } };
-type DeletedLog = { args: { eventId?: bigint } };
+
+function sameAddress(left: string, right: string) {
+  return left.toLowerCase() === right.toLowerCase();
+}
 
 function getEventField<T>(eventData: EventData, index: number, key: keyof EventDataObject) {
   return (
@@ -97,7 +100,10 @@ function isBuyable(event: ChainEventRecord) {
   );
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const viewerAddressParam = new URL(request.url).searchParams.get("address");
+  const viewerAddress =
+    viewerAddressParam && isAddress(viewerAddressParam) ? viewerAddressParam : null;
   const serverTime = BigInt(Math.floor(Date.now() / 1000));
   const emptyData: AvailableEventsData = {
     configured: hasChainEventsAddress,
@@ -146,7 +152,7 @@ export async function GET() {
     } satisfies AvailableEventsData);
   }
 
-  async function getLogs(eventName: "EventCreated" | "EventDeleted") {
+  async function getLogs(eventName: "EventCreated") {
     const ranges = getBlockRanges(chainEventsDeploymentBlock, toBlock, logBlockRange);
     const logs = [];
 
@@ -165,15 +171,7 @@ export async function GET() {
     return sortLogs(logs);
   }
 
-  const [createdLogs, deletedLogs] = await Promise.all([
-    getLogs("EventCreated"),
-    getLogs("EventDeleted"),
-  ]);
-  const deletedEventIds = new Set(
-    (deletedLogs as DeletedLog[])
-      .map((log) => log.args.eventId?.toString())
-      .filter(Boolean),
-  );
+  const createdLogs = await getLogs("EventCreated");
   const createdEventIds = [
     ...new Set(
       (createdLogs as CreatedLog[])
@@ -184,10 +182,6 @@ export async function GET() {
 
   const events: ChainEventRecord[] = [];
   for (const eventId of createdEventIds) {
-    if (deletedEventIds.has(eventId.toString())) {
-      continue;
-    }
-
     try {
       const eventData = (await publicClient.readContract({
         address: chainEventsAddress,
@@ -196,8 +190,10 @@ export async function GET() {
         args: [eventId],
       })) as EventData;
       const event = asRecord(eventId, eventData);
+      const isViewerOrganizer =
+        Boolean(viewerAddress) && sameAddress(event.organizer, viewerAddress as Address);
 
-      if (isBuyable(event)) {
+      if (isBuyable(event) || (isViewerOrganizer && !event.active)) {
         events.push(event);
       }
     } catch {
