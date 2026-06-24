@@ -5,12 +5,13 @@ import { WalletStatus } from "@/components/wallet-status";
 
 export interface AppShellProps {
   children: ReactNode;
-  active: "dashboard" | "create" | "tickets" | "scanner" | "event";
+  active: "dashboard" | "buy" | "create" | "tickets" | "scanner" | "event";
   admin?: boolean;
 }
 
 const navItems = [
   { href: "/", label: "Dashboard", key: "dashboard" },
+  { href: "/buy", label: "Buy Tickets", key: "buy" },
   { href: "/create-event", label: "Create Event", key: "create" },
   { href: "/tickets", label: "My Tickets", key: "tickets" },
 ] as const;

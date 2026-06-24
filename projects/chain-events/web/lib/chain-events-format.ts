@@ -39,6 +39,16 @@ export type DashboardData = {
   scannerAssignments: ScannerAssignmentRecord[];
 };
 
+export type AvailableEventsData = {
+  configured: boolean;
+  compatible?: boolean;
+  error?: string;
+  latestBlock?: string;
+  fromBlock?: string;
+  serverTime?: string;
+  events: ChainEventRecord[];
+};
+
 export function shortenAddress(address?: string) {
   if (!address) {
     return "";
