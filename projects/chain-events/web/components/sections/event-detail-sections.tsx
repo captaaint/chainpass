@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   MapPin,
+  QrCode,
+  ScanLine,
   ShieldCheck,
   ShoppingCart,
   UserRound,
@@ -41,6 +43,7 @@ import {
   EmptyState,
   MetricCard,
   Panel,
+  ScannerViewport,
   StatusCallout,
 } from "@/components/ui/primitives";
 
@@ -69,6 +72,15 @@ type EventDataObject = {
   active: boolean;
 };
 type EventData = EventDataTuple | EventDataObject;
+type TicketQrPayload = {
+  version: string;
+  eventId: string;
+  tokenId: string;
+};
+type DetectedBarcode = { rawValue: string };
+type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
+  detect(source: HTMLVideoElement): Promise<DetectedBarcode[]>;
+};
 
 function parseEventId(value: string) {
   if (!/^\d+$/.test(value)) {
@@ -713,6 +725,351 @@ export function PurchasePanel({
   );
 }
 
+function parseScannedTicket(input: string, expectedEventId: string) {
+  const trimmedInput = input.trim();
+
+  if (!trimmedInput) {
+    throw new Error("Scan a QR code or enter a token ID.");
+  }
+
+  if (/^\d+$/.test(trimmedInput)) {
+    return BigInt(trimmedInput);
+  }
+
+  let payload: TicketQrPayload;
+  try {
+    payload = JSON.parse(trimmedInput) as TicketQrPayload;
+  } catch {
+    throw new Error("QR payload is not valid ChainEvents JSON.");
+  }
+
+  if (payload.version !== "chainpass-events-v1") {
+    throw new Error("QR payload version is not supported.");
+  }
+
+  if (payload.eventId !== expectedEventId) {
+    throw new Error(`Ticket belongs to event #${payload.eventId}, not this event.`);
+  }
+
+  if (!/^\d+$/.test(payload.tokenId)) {
+    throw new Error("QR payload token ID is invalid.");
+  }
+
+  return BigInt(payload.tokenId);
+}
+
+function getBarcodeDetector() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (window as typeof window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector ?? null;
+}
+
+function TicketValidationPanel({ event }: Readonly<{ event: ChainEventRecord | null }>) {
+  const publicClient = usePublicClient({ chainId: sepolia.id });
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const isSepolia = chainId === sepolia.id;
+  const { switchChain, isPending: isSwitchPending } = useSwitchChain();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const lastScannedRef = useRef("");
+  const [manualPayload, setManualPayload] = useState("");
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const {
+    data: checkInHash,
+    error: checkInWriteError,
+    isPending: isCheckInSignaturePending,
+    writeContract: writeCheckIn,
+  } = useWriteContract();
+  const {
+    isLoading: isCheckInConfirming,
+    isSuccess: isCheckInSuccess,
+    error: checkInReceiptError,
+  } = useWaitForTransactionReceipt({ hash: checkInHash, chainId: sepolia.id });
+  const scannerAllowedQuery = useReadContract({
+    address: chainEventsAddress,
+    abi: chainEventsAbi,
+    functionName: "scannerAllowed",
+    args: event && address ? [BigInt(event.id), address] : undefined,
+    chainId: sepolia.id,
+    query: {
+      enabled: Boolean(event && address),
+      retry: false,
+    },
+  });
+  const isOrganizer =
+    Boolean(event && address) && event?.organizer.toLowerCase() === address?.toLowerCase();
+  const canValidate = Boolean(event && isConnected && isSepolia && (isOrganizer || scannerAllowedQuery.data));
+  const statusError = useMemo(() => {
+    if (validationError) {
+      return new Error(validationError);
+    }
+
+    return checkInWriteError ?? checkInReceiptError ?? null;
+  }, [checkInReceiptError, checkInWriteError, validationError]);
+
+  const stopCamera = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setIsCameraActive(false);
+  }, []);
+
+  useEffect(() => stopCamera, [stopCamera]);
+
+  async function validatePayload(payload: string) {
+    setValidationError(null);
+    setValidationMessage(null);
+
+    if (!event) {
+      setValidationError("Event details are not loaded.");
+      return;
+    }
+
+    if (!isConnected || !address) {
+      setValidationError("Connect MetaMask before validating tickets.");
+      return;
+    }
+
+    if (!isSepolia) {
+      setValidationError("Switch to Sepolia before validating tickets.");
+      return;
+    }
+
+    if (!canValidate) {
+      setValidationError("Connected wallet is not the organizer or an approved scanner.");
+      return;
+    }
+
+    if (!publicClient) {
+      setValidationError("Sepolia RPC client is not ready.");
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const tokenId = parseScannedTicket(payload, event.id);
+      const eventId = BigInt(event.id);
+      const [owner, tokenEventId, tokenUsed] = await Promise.all([
+        publicClient.readContract({
+          address: chainEventsAddress,
+          abi: chainEventsAbi,
+          functionName: "ownerOf",
+          args: [tokenId],
+        }),
+        publicClient.readContract({
+          address: chainEventsAddress,
+          abi: chainEventsAbi,
+          functionName: "tokenEvent",
+          args: [tokenId],
+        }),
+        publicClient.readContract({
+          address: chainEventsAddress,
+          abi: chainEventsAbi,
+          functionName: "tokenUsed",
+          args: [tokenId],
+        }),
+      ]);
+      const now = BigInt(Math.floor(Date.now() / 1000));
+
+      if (tokenEventId !== eventId) {
+        setValidationError(`Ticket belongs to event #${tokenEventId.toString()}, not this event.`);
+        return;
+      }
+
+      if (tokenUsed) {
+        setValidationError("Ticket has already been checked in.");
+        return;
+      }
+
+      if (!event.active) {
+        setValidationError("Event is deactivated.");
+        return;
+      }
+
+      if (now < BigInt(event.startTime)) {
+        setValidationError("Event has not started yet.");
+        return;
+      }
+
+      if (now > BigInt(event.endTime)) {
+        setValidationError("Event has ended.");
+        return;
+      }
+
+      await publicClient.simulateContract({
+        account: address,
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "checkIn",
+        args: [eventId, tokenId],
+      });
+
+      setValidationMessage(`Valid ticket #${tokenId.toString()} owned by ${shortenAddress(owner)}.`);
+      writeCheckIn({
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "checkIn",
+        args: [eventId, tokenId],
+        chainId: sepolia.id,
+      });
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : "Ticket validation failed.");
+    } finally {
+      setIsValidating(false);
+    }
+  }
+
+  async function startCamera() {
+    setValidationError(null);
+    setValidationMessage(null);
+
+    const BarcodeDetector = getBarcodeDetector();
+    if (!BarcodeDetector) {
+      setValidationError("QR scanning is not supported by this browser. Paste the QR payload instead.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      setIsCameraActive(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const scanFrame = async () => {
+        const video = videoRef.current;
+
+        if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          const codes = await detector.detect(video);
+          const rawValue = codes[0]?.rawValue;
+
+          if (rawValue && rawValue !== lastScannedRef.current) {
+            lastScannedRef.current = rawValue;
+            setManualPayload(rawValue);
+            void validatePayload(rawValue);
+          }
+        }
+
+        frameRef.current = requestAnimationFrame(scanFrame);
+      };
+
+      frameRef.current = requestAnimationFrame(scanFrame);
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : "Could not start camera.");
+      stopCamera();
+    }
+  }
+
+  if (!event || (!isOrganizer && !scannerAllowedQuery.data)) {
+    return null;
+  }
+
+  return (
+    <Panel className="bg-[var(--ce-surface-container-low)] p-6">
+      <h2 className="flex items-center gap-3 text-xl font-semibold">
+        <QrCode size={24} aria-hidden="true" />
+        Ticket Validation
+      </h2>
+      <p className="mt-3 text-sm leading-6 text-[var(--ce-on-surface-variant)]">
+        Scan a ChainEvents ticket QR code or paste the QR payload to validate and check in the
+        attendee.
+      </p>
+      {!isSepolia ? (
+        <Button
+          tone="secondary"
+          className="mt-5 w-full"
+          disabled={isSwitchPending}
+          onClick={() => switchChain({ chainId: sepolia.id })}
+        >
+          {isSwitchPending ? "Switching" : "Switch to Sepolia"}
+        </Button>
+      ) : null}
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,.8fr)]">
+        <ScannerViewport showRecordingBadge={false}>
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="absolute inset-0 size-full object-cover"
+          />
+          <div className="absolute bottom-5 left-5 right-5 flex gap-3">
+            <Button
+              className="min-h-11 flex-1"
+              disabled={!canValidate || isCameraActive || isValidating}
+              onClick={startCamera}
+            >
+              <ScanLine size={17} aria-hidden="true" />
+              Start QR Scan
+            </Button>
+            <Button
+              tone="secondary"
+              className="min-h-11"
+              disabled={!isCameraActive}
+              onClick={stopCamera}
+            >
+              Stop
+            </Button>
+          </div>
+        </ScannerViewport>
+        <div className="grid content-start gap-4">
+          <label className="grid gap-2">
+            <span className="ce-label text-[var(--ce-on-surface-variant)]">QR payload or token ID</span>
+            <textarea
+              value={manualPayload}
+              onChange={(inputEvent) => setManualPayload(inputEvent.target.value)}
+              rows={7}
+              placeholder='{"version":"chainpass-events-v1","eventId":"1","tokenId":"1"}'
+              className="resize-y rounded-[var(--ce-radius)] border border-[var(--ce-outline-variant)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ce-on-surface)] outline-none transition placeholder:text-[#7a8290] focus:border-[var(--ce-secondary)]"
+            />
+          </label>
+          <Button
+            className="min-h-12 w-full"
+            disabled={!canValidate || isValidating || isCheckInSignaturePending || isCheckInConfirming}
+            onClick={() => void validatePayload(manualPayload)}
+          >
+            {isValidating
+              ? "Validating"
+              : isCheckInSignaturePending
+                ? "Confirm in Wallet"
+                : isCheckInConfirming
+                  ? "Checking In"
+                  : "Validate and Check In"}
+          </Button>
+          {isCheckInSuccess || validationMessage ? (
+            <StatusCallout title="Ticket ready" tone="success">
+              {isCheckInSuccess ? "Ticket checked in successfully." : validationMessage}
+            </StatusCallout>
+          ) : null}
+          <TransactionStatus
+            hash={checkInHash}
+            isConfirming={isValidating || isCheckInSignaturePending || isCheckInConfirming}
+            isSuccess={isCheckInSuccess}
+            error={statusError}
+          />
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 export function EventDetailContent({ eventId }: Readonly<{ eventId: string }>) {
   const {
     eventId: parsedEventId,
@@ -736,6 +1093,7 @@ export function EventDetailContent({ eventId }: Readonly<{ eventId: string }>) {
         />
         <EventMetrics event={event} />
         <OrganizerControls event={event} refetchEvent={refetchEvent} />
+        <TicketValidationPanel event={event} />
       </div>
       <PurchasePanel event={event} refetchEvent={refetchEvent} />
     </section>

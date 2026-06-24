@@ -392,15 +392,18 @@ export function SearchToolbar({ placeholder = "Search tickets..." }: Readonly<Se
 
 export interface ScannerViewportProps {
   children?: ReactNode;
+  showRecordingBadge?: boolean;
 }
 
-export function ScannerViewport({ children }: Readonly<ScannerViewportProps>) {
+export function ScannerViewport({ children, showRecordingBadge = true }: Readonly<ScannerViewportProps>) {
   return (
     <div className="relative min-h-[390px] overflow-hidden rounded-[var(--ce-radius-lg)] border border-[var(--ce-outline-variant)] bg-[linear-gradient(135deg,#06101c,#102a32_52%,#05080e)]">
       <div className="absolute inset-[18%] border border-[var(--ce-secondary)] opacity-70 shadow-[0_0_28px_rgba(87,223,254,.22)]" />
-      <div className="absolute right-6 top-6 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
-        <span className="mr-1 text-red-400">●</span> REC 4K
-      </div>
+      {showRecordingBadge ? (
+        <div className="absolute right-6 top-6 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
+          <span className="mr-1 text-red-400">●</span> REC 4K
+        </div>
+      ) : null}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-sm text-[var(--ce-inverse-on-surface)]">
         <ScanLine size={42} aria-hidden="true" />
         Camera preview appears here
