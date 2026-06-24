@@ -117,3 +117,31 @@ export function getEventStatus(event: Pick<ChainEventRecord, "active" | "endTime
 
   return "Active";
 }
+
+export function getTicketStatus(
+  ticket: Pick<TicketRecord, "used"> & {
+    event: Pick<ChainEventRecord, "active" | "endTime" | "startTime">;
+  },
+) {
+  if (ticket.used) {
+    return {
+      label: "Checked In",
+      tone: "neutral" as const,
+      usableNow: false,
+    };
+  }
+
+  if (getEventStatus(ticket.event) === "Ended") {
+    return {
+      label: "Not valid anymore",
+      tone: "warning" as const,
+      usableNow: false,
+    };
+  }
+
+  return {
+    label: "Valid",
+    tone: "success" as const,
+    usableNow: true,
+  };
+}

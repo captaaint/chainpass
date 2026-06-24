@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   CalendarDays,
   RefreshCw,
   Search,
@@ -11,31 +10,15 @@ import {
   Ticket,
   WalletCards,
 } from "lucide-react";
-import { type Address } from "viem";
-import {
-  useAccount,
-  useChainId,
-  usePublicClient,
-  useSwitchChain,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
-import { sepolia } from "wagmi/chains";
 
-import { TransactionStatus } from "@/components/transaction-status";
 import {
   Badge,
   Button,
+  ButtonLink,
   EmptyState,
   Panel,
   StatusCallout,
-  cx,
 } from "@/components/ui/primitives";
-import {
-  chainEventsAbi,
-  chainEventsAddress,
-  hasChainEventsAddress,
-} from "@/lib/contract";
 import {
   type AvailableEventsData,
   type ChainEventRecord,
@@ -46,57 +29,7 @@ import {
   shortenAddress,
 } from "@/lib/chain-events-format";
 
-type EventDataTuple = readonly [
-  string,
-  string,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  Address,
-  Address,
-  boolean,
-];
-type EventDataObject = {
-  name: string;
-  description: string;
-  startTime: bigint;
-  endTime: bigint;
-  ticketPrice: bigint;
-  maxSupply: bigint;
-  sold: bigint;
-  organizer: Address;
-  treasury: Address;
-  active: boolean;
-};
-type EventData = EventDataTuple | EventDataObject;
-
 const emptyEvents: ChainEventRecord[] = [];
-
-function getEventField<T>(eventData: EventData, index: number, key: keyof EventDataObject) {
-  return (
-    Array.isArray(eventData)
-      ? (eventData as EventDataTuple)[index]
-      : (eventData as EventDataObject)[key]
-  ) as T;
-}
-
-function eventFromData(id: string, eventData: EventData): ChainEventRecord {
-  return {
-    id,
-    name: getEventField<string>(eventData, 0, "name"),
-    description: getEventField<string>(eventData, 1, "description"),
-    startTime: getEventField<bigint>(eventData, 2, "startTime").toString(),
-    endTime: getEventField<bigint>(eventData, 3, "endTime").toString(),
-    ticketPrice: getEventField<bigint>(eventData, 4, "ticketPrice").toString(),
-    maxSupply: getEventField<bigint>(eventData, 5, "maxSupply").toString(),
-    sold: getEventField<bigint>(eventData, 6, "sold").toString(),
-    organizer: getEventField<Address>(eventData, 7, "organizer"),
-    treasury: getEventField<Address>(eventData, 8, "treasury"),
-    active: getEventField<boolean>(eventData, 9, "active"),
-  };
-}
 
 function isSoldOut(event: ChainEventRecord) {
   return BigInt(event.sold) >= BigInt(event.maxSupply);
@@ -183,28 +116,8 @@ function getListState({
   };
 }
 
-export function BuyTicketsContent() {
-  const queryClient = useQueryClient();
-  const publicClient = usePublicClient({ chainId: sepolia.id });
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const isSepolia = chainId === sepolia.id;
-  const { switchChain, isPending: isSwitchPending } = useSwitchChain();
-  const {
-    data: hash,
-    error: writeError,
-    isPending: isSignaturePending,
-    writeContract,
-  } = useWriteContract();
-  const {
-    isLoading: isConfirming,
-    isSuccess,
-    error: receiptError,
-  } = useWaitForTransactionReceipt({ hash, chainId: sepolia.id });
-
+export function EventsListingContent() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [pendingEventId, setPendingEventId] = useState<string | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   const eventsQuery = useQuery({
     queryKey: ["chain-events-available-events"],
@@ -232,90 +145,6 @@ export function BuyTicketsContent() {
     compatible: eventsQuery.data?.compatible,
     error: eventsQuery.data?.error,
   });
-  const statusError = useMemo(() => {
-    if (localError) {
-      return new Error(localError);
-    }
-
-    return writeError ?? receiptError ?? null;
-  }, [localError, receiptError, writeError]);
-
-  useEffect(() => {
-    if (!isSuccess) {
-      return;
-    }
-
-    void queryClient.invalidateQueries({ queryKey: ["chain-events-available-events"] });
-    void queryClient.invalidateQueries({ queryKey: ["chain-events-dashboard", address] });
-  }, [address, isSuccess, queryClient]);
-
-  async function handleBuy(event: ChainEventRecord) {
-    setLocalError(null);
-
-    if (!hasChainEventsAddress) {
-      setLocalError("ChainEvents contract address is not configured.");
-      return;
-    }
-
-    if (!isConnected || !address) {
-      setLocalError("Connect MetaMask before buying a ticket.");
-      return;
-    }
-
-    if (!isSepolia) {
-      setLocalError("Switch to Sepolia before buying a ticket.");
-      return;
-    }
-
-    if (!publicClient) {
-      setLocalError("Sepolia RPC client is not ready.");
-      return;
-    }
-
-    const eventId = BigInt(event.id);
-    setPendingEventId(event.id);
-
-    try {
-      const eventData = (await publicClient.readContract({
-        address: chainEventsAddress,
-        abi: chainEventsAbi,
-        functionName: "getEvent",
-        args: [eventId],
-      })) as EventData;
-      const freshEvent = eventFromData(event.id, eventData);
-      const blocker = getPurchaseBlocker(freshEvent, serverNowSeconds);
-
-      if (blocker) {
-        setLocalError(blocker);
-        return;
-      }
-
-      const ticketPrice = BigInt(freshEvent.ticketPrice);
-
-      await publicClient.simulateContract({
-        account: address,
-        address: chainEventsAddress,
-        abi: chainEventsAbi,
-        functionName: "buyTicket",
-        args: [eventId],
-        value: ticketPrice,
-      });
-
-      writeContract({
-        address: chainEventsAddress,
-        abi: chainEventsAbi,
-        functionName: "buyTicket",
-        args: [eventId],
-        value: ticketPrice,
-        chainId: sepolia.id,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Ticket purchase simulation failed.";
-      setLocalError(message);
-    } finally {
-      setPendingEventId(null);
-    }
-  }
 
   return (
     <section className="grid gap-6">
@@ -334,19 +163,6 @@ export function BuyTicketsContent() {
             className="min-h-12 w-full rounded-[var(--ce-radius)] border border-[var(--ce-outline-variant)] bg-white pl-12 pr-4 text-sm outline-none transition focus:border-[var(--ce-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </label>
-
-        {isConnected && !isSepolia ? (
-          <Button
-            tone="secondary"
-            disabled={isSwitchPending}
-            onClick={() => switchChain({ chainId: sepolia.id })}
-            className="min-h-12"
-          >
-            <AlertTriangle size={17} aria-hidden="true" />
-            {isSwitchPending ? "Switching" : "Switch to Sepolia"}
-          </Button>
-        ) : null}
-
         <Button
           tone="secondary"
           disabled={eventsQuery.isFetching}
@@ -362,17 +178,10 @@ export function BuyTicketsContent() {
         </Button>
 
         <p className="ce-label text-[var(--ce-on-surface-variant)] md:col-span-3">
-          Showing {filteredEvents.length} of {events.length} buyable events. Buyer pays ticket
-          price plus network gas; the event treasury receives the ticket price.
+          Showing {filteredEvents.length} of {events.length} available events. Open an event to
+          review details and buy a ticket.
         </p>
       </Panel>
-
-      <TransactionStatus
-        hash={hash}
-        isConfirming={isSignaturePending || isConfirming}
-        isSuccess={isSuccess}
-        error={statusError}
-      />
 
       {eventsQuery.data?.compatible === false ? (
         <StatusCallout title="Contract ABI mismatch" tone="danger">
@@ -389,7 +198,6 @@ export function BuyTicketsContent() {
               serverNowSeconds > 0 && BigInt(event.startTime) > BigInt(serverNowSeconds);
             const blocker =
               serverNowSeconds > 0 ? getPurchaseBlocker(event, serverNowSeconds) : null;
-            const isPending = pendingEventId === event.id || isSignaturePending || isConfirming;
 
             return (
               <Panel key={event.id} className="grid content-between gap-6 p-6">
@@ -433,26 +241,16 @@ export function BuyTicketsContent() {
 
                 {startsInFuture ? (
                   <p className="rounded-[var(--ce-radius)] bg-[var(--ce-info-container)] px-4 py-3 text-sm leading-6 text-[var(--ce-info)]">
-                    This event starts {formatEventDateTime(event.startTime)}. You can buy now; the
-                    ticket is valid during the event window.
+                    This event starts {formatEventDateTime(event.startTime)}. Ticket purchase is
+                    available from the event details page.
                   </p>
                 ) : null}
 
                 <div className="grid gap-3 border-t border-[var(--ce-outline-variant)] pt-5">
-                  <Button
-                    disabled={Boolean(blocker) || isPending}
-                    onClick={() => void handleBuy(event)}
-                    className={cx("min-h-12 w-full", isPending && "cursor-wait")}
-                  >
+                  <ButtonLink href={`/events/${event.id}`} className="min-h-12 w-full">
                     <ShoppingCart size={17} aria-hidden="true" />
-                    {pendingEventId === event.id
-                      ? "Simulating"
-                      : isSignaturePending
-                        ? "Confirm in Wallet"
-                        : isConfirming
-                          ? "Confirming"
-                          : "Buy Ticket"}
-                  </Button>
+                    View Event
+                  </ButtonLink>
                   <p className="ce-label text-center text-[var(--ce-on-surface-variant)]">
                     Treasury: {shortenAddress(event.treasury)}
                   </p>

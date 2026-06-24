@@ -6,6 +6,7 @@ import { RefreshCw, Search, Ticket } from "lucide-react";
 import { useChainEventsDashboard } from "@/components/use-chain-events-dashboard";
 import {
   formatEventDateTime,
+  getTicketStatus,
   shortenAddress,
   type TicketRecord,
 } from "@/lib/chain-events-format";
@@ -94,7 +95,7 @@ function getFilteredTickets(tickets: TicketRecord[], searchTerm: string, filter:
   return tickets.filter((ticket) => {
     const matchesFilter =
       filter === "all" ||
-      (filter === "valid" && !ticket.used) ||
+      (filter === "valid" && getTicketStatus(ticket).usableNow) ||
       (filter === "checked-in" && ticket.used);
 
     if (!matchesFilter) {
@@ -204,18 +205,24 @@ export function TicketGallery() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {filteredTickets.length > 0 ? (
-          filteredTickets.map((ticket, index) => (
-            <TicketPreviewCard
-              key={ticket.tokenId}
-              title={ticket.event.name}
-              subtitle={`${formatEventDateTime(ticket.event.startTime)} · Owner ${shortenAddress(ticket.owner)}`}
-              id={ticket.tokenId}
-              badge={ticket.used ? "Checked In" : "Valid"}
-              variant={getVariant(ticket, index)}
-              disabled={ticket.used}
-              externalHref={`https://sepolia.etherscan.io/token/${chainEventsAddress}?a=${ticket.tokenId}`}
-            />
-          ))
+          filteredTickets.map((ticket, index) => {
+            const status = getTicketStatus(ticket);
+
+            return (
+              <TicketPreviewCard
+                key={ticket.tokenId}
+                title={ticket.event.name}
+                subtitle={`${formatEventDateTime(ticket.event.startTime)} · Owner ${shortenAddress(ticket.owner)}`}
+                id={ticket.tokenId}
+                badge={status.label}
+                badgeTone={status.tone}
+                variant={getVariant(ticket, index)}
+                disabled={ticket.used}
+                detailsHref={`/tickets/${ticket.tokenId}`}
+                externalHref={`https://sepolia.etherscan.io/token/${chainEventsAddress}?a=${ticket.tokenId}`}
+              />
+            );
+          })
         ) : (
           <Panel className="p-6 lg:col-span-3">
             <div className="mb-4 flex justify-end">

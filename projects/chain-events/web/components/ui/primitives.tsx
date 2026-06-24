@@ -258,10 +258,12 @@ export interface TicketPreviewCardProps {
   subtitle: string;
   id: string;
   badge: string;
+  badgeTone?: Tone;
   variant?: "cyan" | "mono" | "gold";
   disabled?: boolean;
   highlighted?: boolean;
   externalHref?: string;
+  detailsHref?: string;
 }
 
 export function TicketPreviewCard({
@@ -269,19 +271,22 @@ export function TicketPreviewCard({
   subtitle,
   id,
   badge,
+  badgeTone,
   variant = "cyan",
   disabled,
   highlighted,
   externalHref,
+  detailsHref,
 }: Readonly<TicketPreviewCardProps>) {
-  return (
-    <article
-      className={cx(
-        "overflow-hidden rounded-[var(--ce-radius-lg)] border bg-white shadow-[var(--ce-shadow-soft)]",
-        highlighted ? "border-[var(--ce-secondary)] ring-1 ring-[var(--ce-secondary)]" : "border-[var(--ce-outline-variant)]",
-        disabled && "opacity-60",
-      )}
-    >
+  const cardClassName = cx(
+    "block overflow-hidden rounded-[var(--ce-radius-lg)] border bg-white shadow-[var(--ce-shadow-soft)]",
+    highlighted
+      ? "border-[var(--ce-secondary)] ring-1 ring-[var(--ce-secondary)]"
+      : "border-[var(--ce-outline-variant)]",
+    disabled && "opacity-60",
+  );
+  const cardContent = (
+    <>
       <div
         className={cx(
           "relative h-48",
@@ -297,7 +302,9 @@ export function TicketPreviewCard({
           Access Pass
         </div>
         <div className="absolute right-4 top-4">
-          <Badge tone={highlighted ? "info" : disabled ? "neutral" : "success"}>{badge}</Badge>
+          <Badge tone={badgeTone ?? (highlighted ? "info" : disabled ? "neutral" : "success")}>
+            {badge}
+          </Badge>
         </div>
       </div>
       <div className="p-5">
@@ -314,11 +321,21 @@ export function TicketPreviewCard({
           <Ticket size={22} aria-hidden="true" className="text-[var(--ce-on-surface-variant)]" />
         </div>
         <div className="mt-4 grid gap-2 border-t border-dashed border-[var(--ce-outline-variant)] pt-4">
-          <Button className="w-full" disabled={disabled}>
-            <QrCode size={16} aria-hidden="true" />
-            {disabled ? "Ticket Redeemed" : "Show QR Code"}
-          </Button>
-          {externalHref ? (
+          {detailsHref ? (
+            <Link
+              href={detailsHref}
+              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--ce-radius)] bg-[var(--ce-secondary)] px-4 text-sm font-semibold text-[var(--ce-on-secondary)] transition hover:bg-[var(--ce-on-secondary-container)]"
+            >
+              <QrCode size={16} aria-hidden="true" />
+              View Ticket Details
+            </Link>
+          ) : (
+            <Button className="w-full" disabled={disabled}>
+              <QrCode size={16} aria-hidden="true" />
+              {disabled ? "Ticket Redeemed" : "Show QR Code"}
+            </Button>
+          )}
+          {externalHref && !detailsHref ? (
             <a
               href={externalHref}
               target="_blank"
@@ -330,8 +347,18 @@ export function TicketPreviewCard({
           ) : null}
         </div>
       </div>
-    </article>
+    </>
   );
+
+  if (detailsHref) {
+    return (
+      <Link href={detailsHref} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return <article className={cardClassName}>{cardContent}</article>;
 }
 
 export interface SearchToolbarProps {

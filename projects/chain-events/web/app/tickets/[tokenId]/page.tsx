@@ -2,26 +2,26 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
-import { EventDetailContent } from "@/components/sections/event-detail-sections";
+import { TicketDetailContent } from "@/components/sections/ticket-detail-sections";
 
-export default async function EventDetailPage({
+export default async function TicketDetailPage({
   params,
 }: Readonly<{
-  params: Promise<{ id: string }>;
+  params: Promise<{ tokenId: string }>;
 }>) {
-  const { id } = await params;
+  const { tokenId } = await params;
 
   return (
-    <AppShell active="events">
+    <AppShell active="tickets">
       <div className="grid gap-8">
         <Link
-          href="/"
+          href="/tickets"
           className="ce-label inline-flex w-fit items-center gap-2 uppercase text-[var(--ce-on-surface-variant)] transition hover:text-[var(--ce-on-surface)]"
         >
           <ArrowLeft size={18} aria-hidden="true" />
-          Back to Dashboard
+          Back to My Tickets
         </Link>
-        <EventDetailContent eventId={id} />
+        <TicketDetailContent tokenIdParam={tokenId} />
       </div>
     </AppShell>
   );

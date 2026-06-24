@@ -1,10 +1,27 @@
 "use client";
 
-import { CalendarDays, MapPin, ShieldCheck, UserRound } from "lucide-react";
-import { formatEther } from "viem";
-import { useAccount, useChainId, useReadContract } from "wagmi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CalendarDays,
+  MapPin,
+  ShieldCheck,
+  ShoppingCart,
+  UserRound,
+} from "lucide-react";
+import { formatEther, isAddress } from "viem";
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useReadContract,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { sepolia } from "wagmi/chains";
 
+import { TransactionStatus } from "@/components/transaction-status";
+import { useChainEventsDashboard } from "@/components/use-chain-events-dashboard";
 import {
   chainEventsAbi,
   chainEventsAddress,
@@ -20,10 +37,11 @@ import {
 import {
   Badge,
   Button,
+  ButtonLink,
   EmptyState,
-  Field,
   MetricCard,
   Panel,
+  StatusCallout,
 } from "@/components/ui/primitives";
 
 type EventDataTuple = readonly [
@@ -82,6 +100,28 @@ function eventFromTuple(id: bigint, eventData: EventData): ChainEventRecord {
     treasury: getEventField<`0x${string}`>(eventData, 8, "treasury"),
     active: getEventField<boolean>(eventData, 9, "active"),
   };
+}
+
+function getPurchaseBlocker(event: ChainEventRecord) {
+  const status = getEventStatus(event);
+
+  if (!event.active) {
+    return "Event is inactive.";
+  }
+
+  if (status === "Upcoming") {
+    return "Event has not started yet.";
+  }
+
+  if (status === "Ended") {
+    return "Event has ended.";
+  }
+
+  if (BigInt(event.sold) >= BigInt(event.maxSupply)) {
+    return "Event is sold out.";
+  }
+
+  return null;
 }
 
 function useEventDetail(eventIdParam: string) {
@@ -237,10 +277,129 @@ export function EventMetrics({ event }: Readonly<{ event: ChainEventRecord | nul
   );
 }
 
-export function OrganizerControls({ event }: Readonly<{ event: ChainEventRecord | null }>) {
+export function OrganizerControls({
+  event,
+  refetchEvent,
+}: Readonly<{
+  event: ChainEventRecord | null;
+  refetchEvent: () => void;
+}>) {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const isSepolia = chainId === sepolia.id;
+  const [scannerAddress, setScannerAddress] = useState("");
+  const [allowScanner, setAllowScanner] = useState(true);
+  const [scannerFormError, setScannerFormError] = useState<string | null>(null);
+  const [deleteFormError, setDeleteFormError] = useState<string | null>(null);
+  const {
+    data: scannerHash,
+    error: scannerWriteError,
+    isPending: isScannerSignaturePending,
+    writeContract: writeScanner,
+  } = useWriteContract();
+  const {
+    isLoading: isScannerConfirming,
+    isSuccess: isScannerSuccess,
+    error: scannerReceiptError,
+  } = useWaitForTransactionReceipt({ hash: scannerHash, chainId: sepolia.id });
+  const {
+    data: deleteHash,
+    error: deleteWriteError,
+    isPending: isDeleteSignaturePending,
+    writeContract: writeDelete,
+  } = useWriteContract();
+  const {
+    isLoading: isDeleteConfirming,
+    isSuccess: isDeleteSuccess,
+    error: deleteReceiptError,
+  } = useWaitForTransactionReceipt({ hash: deleteHash, chainId: sepolia.id });
   const isOrganizer =
     Boolean(event && address) && event?.organizer.toLowerCase() === address?.toLowerCase();
+  const scannerError = useMemo(() => {
+    if (scannerFormError) {
+      return new Error(scannerFormError);
+    }
+
+    return scannerWriteError ?? scannerReceiptError ?? null;
+  }, [scannerFormError, scannerReceiptError, scannerWriteError]);
+  const deleteError = useMemo(() => {
+    if (deleteFormError) {
+      return new Error(deleteFormError);
+    }
+
+    return deleteWriteError ?? deleteReceiptError ?? null;
+  }, [deleteFormError, deleteReceiptError, deleteWriteError]);
+
+  useEffect(() => {
+    if (!isDeleteSuccess) {
+      return;
+    }
+
+    refetchEvent();
+  }, [isDeleteSuccess, refetchEvent]);
+
+  function handleScannerUpdate() {
+    setScannerFormError(null);
+
+    if (!event) {
+      setScannerFormError("Event details are not loaded.");
+      return;
+    }
+
+    if (!isConnected || !isOrganizer) {
+      setScannerFormError("Connect as the event organizer to manage scanners.");
+      return;
+    }
+
+    if (!isSepolia) {
+      setScannerFormError("Switch to Sepolia before updating scanner permissions.");
+      return;
+    }
+
+    if (!isAddress(scannerAddress.trim())) {
+      setScannerFormError("Enter a valid scanner wallet address.");
+      return;
+    }
+
+    writeScanner({
+      address: chainEventsAddress,
+      abi: chainEventsAbi,
+      functionName: "setScanner",
+      args: [BigInt(event.id), scannerAddress.trim() as `0x${string}`, allowScanner],
+      chainId: sepolia.id,
+    });
+  }
+
+  function handleDeleteEvent() {
+    setDeleteFormError(null);
+
+    if (!event) {
+      setDeleteFormError("Event details are not loaded.");
+      return;
+    }
+
+    if (!isConnected || !isOrganizer) {
+      setDeleteFormError("Connect as the event organizer to deactivate this event.");
+      return;
+    }
+
+    if (!isSepolia) {
+      setDeleteFormError("Switch to Sepolia before deactivating this event.");
+      return;
+    }
+
+    writeDelete({
+      address: chainEventsAddress,
+      abi: chainEventsAbi,
+      functionName: "deleteEvent",
+      args: [BigInt(event.id)],
+      chainId: sepolia.id,
+    });
+  }
+
+  if (!isOrganizer) {
+    return null;
+  }
 
   return (
     <Panel className="bg-[var(--ce-surface-container-low)] p-6">
@@ -250,31 +409,194 @@ export function OrganizerControls({ event }: Readonly<{ event: ChainEventRecord 
       </h2>
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <Panel className="p-5">
-          <Field label="Scanner Wallets" placeholder="0x..." />
+          <label className="grid gap-2">
+            <span className="ce-label text-[var(--ce-on-surface-variant)]">Scanner Wallet</span>
+            <input
+              value={scannerAddress}
+              onChange={(scannerEvent) => setScannerAddress(scannerEvent.target.value)}
+              placeholder="0x..."
+              className="min-h-11 rounded-[var(--ce-radius)] border border-[var(--ce-outline-variant)] bg-[var(--ce-surface)] px-4 text-sm text-[var(--ce-on-surface)] outline-none transition placeholder:text-[#7a8290] focus:border-[var(--ce-secondary)]"
+            />
+          </label>
+          <label className="ce-label mt-4 flex items-center gap-3 text-[var(--ce-on-surface-variant)]">
+            <input
+              type="checkbox"
+              checked={allowScanner}
+              onChange={(scannerEvent) => setAllowScanner(scannerEvent.target.checked)}
+              className="size-4"
+            />
+            Allow this wallet to scan tickets
+          </label>
+          <Button
+            className="mt-5 w-full"
+            disabled={!isConnected || !isOrganizer || isScannerSignaturePending || isScannerConfirming}
+            onClick={handleScannerUpdate}
+          >
+            {isScannerSignaturePending
+              ? "Confirm in Wallet"
+              : isScannerConfirming
+                ? "Updating Scanner"
+                : "Update Scanner"}
+          </Button>
           <p className="mt-4 text-sm text-[var(--ce-on-surface-variant)]">
             {isOrganizer
-              ? "Scanner write controls are ready for the next milestone."
+              ? "Organizer wallets can grant or revoke scanner permissions for this event."
               : "Connect as the organizer wallet to manage scanner permissions."}
           </p>
+          <div className="mt-4">
+            <TransactionStatus
+              hash={scannerHash}
+              isConfirming={isScannerSignaturePending || isScannerConfirming}
+              isSuccess={isScannerSuccess}
+              error={scannerError}
+            />
+          </div>
         </Panel>
         <Panel className="p-5">
           <p className="ce-label uppercase text-[var(--ce-on-surface-variant)]">Danger Zone</p>
           <p className="mt-4 text-sm text-[var(--ce-on-surface-variant)]">
-            Deactivation is an organizer transaction and will be wired with contract writes.
+            Deactivation marks the event inactive. Purchases, scanner updates, and check-in will
+            be blocked by the contract.
           </p>
-          <Button tone="danger" className="mt-8 w-full" disabled={!isConnected || !isOrganizer}>
-            Deactivate Event
+          <Button
+            tone="danger"
+            className="mt-8 w-full"
+            disabled={!isConnected || !isOrganizer || isDeleteSignaturePending || isDeleteConfirming}
+            onClick={handleDeleteEvent}
+          >
+            {isDeleteSignaturePending
+              ? "Confirm in Wallet"
+              : isDeleteConfirming
+                ? "Deactivating"
+                : "Deactivate Event"}
           </Button>
+          <div className="mt-4">
+            <TransactionStatus
+              hash={deleteHash}
+              isConfirming={isDeleteSignaturePending || isDeleteConfirming}
+              isSuccess={isDeleteSuccess}
+              error={deleteError}
+            />
+          </div>
         </Panel>
       </div>
     </Panel>
   );
 }
 
-export function PurchasePanel({ event }: Readonly<{ event: ChainEventRecord | null }>) {
+export function PurchasePanel({
+  event,
+  refetchEvent,
+}: Readonly<{
+  event: ChainEventRecord | null;
+  refetchEvent: () => void;
+}>) {
+  const publicClient = usePublicClient({ chainId: sepolia.id });
+  const { address, isConnected } = useAccount();
+  const dashboard = useChainEventsDashboard();
   const chainId = useChainId();
   const isSepolia = chainId === sepolia.id;
+  const { switchChain, isPending: isSwitchPending } = useSwitchChain();
+  const {
+    data: buyHash,
+    error: buyWriteError,
+    isPending: isBuySignaturePending,
+    writeContract: writeBuy,
+  } = useWriteContract();
+  const {
+    isLoading: isBuyConfirming,
+    isSuccess: isBuySuccess,
+    error: buyReceiptError,
+  } = useWaitForTransactionReceipt({ hash: buyHash, chainId: sepolia.id });
+  const [buyFormError, setBuyFormError] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
   const status = event ? getEventStatus(event) : "Unavailable";
+  const purchaseBlocker = event ? getPurchaseBlocker(event) : "Event details are not loaded.";
+  const ownedTicket = event
+    ? dashboard.data?.tickets.find((ticket) => ticket.eventId === event.id)
+    : undefined;
+  const buyError = useMemo(() => {
+    if (buyFormError) {
+      return new Error(buyFormError);
+    }
+
+    return buyWriteError ?? buyReceiptError ?? null;
+  }, [buyFormError, buyReceiptError, buyWriteError]);
+
+  useEffect(() => {
+    if (!isBuySuccess) {
+      return;
+    }
+
+    refetchEvent();
+  }, [isBuySuccess, refetchEvent]);
+
+  async function handleBuyTicket() {
+    setBuyFormError(null);
+
+    if (!event) {
+      setBuyFormError("Event details are not loaded.");
+      return;
+    }
+
+    if (!isConnected || !address) {
+      setBuyFormError("Connect MetaMask before buying a ticket.");
+      return;
+    }
+
+    if (!isSepolia) {
+      setBuyFormError("Switch to Sepolia before buying a ticket.");
+      return;
+    }
+
+    if (!publicClient) {
+      setBuyFormError("Sepolia RPC client is not ready.");
+      return;
+    }
+
+    setIsSimulating(true);
+
+    try {
+      const eventId = BigInt(event.id);
+      const eventData = (await publicClient.readContract({
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "getEvent",
+        args: [eventId],
+      })) as EventData;
+      const freshEvent = eventFromTuple(eventId, eventData);
+      const blocker = getPurchaseBlocker(freshEvent);
+
+      if (blocker) {
+        setBuyFormError(blocker);
+        return;
+      }
+
+      const ticketPrice = BigInt(freshEvent.ticketPrice);
+
+      await publicClient.simulateContract({
+        account: address,
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "buyTicket",
+        args: [eventId],
+        value: ticketPrice,
+      });
+
+      writeBuy({
+        address: chainEventsAddress,
+        abi: chainEventsAbi,
+        functionName: "buyTicket",
+        args: [eventId],
+        value: ticketPrice,
+        chainId: sepolia.id,
+      });
+    } catch (error) {
+      setBuyFormError(error instanceof Error ? error.message : "Ticket purchase simulation failed.");
+    } finally {
+      setIsSimulating(false);
+    }
+  }
 
   return (
     <aside className="grid content-start gap-6">
@@ -301,14 +623,58 @@ export function PurchasePanel({ event }: Readonly<{ event: ChainEventRecord | nu
             <span>{event ? `${formatEther(BigInt(event.ticketPrice))} ETH + gas` : "Unavailable"}</span>
           </div>
         </div>
-        <Button className="mt-8 min-h-14 w-full text-lg" disabled>
-          Buy Ticket
+        {isConnected && !isSepolia ? (
+          <Button
+            tone="secondary"
+            className="mt-8 min-h-12 w-full"
+            disabled={isSwitchPending}
+            onClick={() => switchChain({ chainId: sepolia.id })}
+          >
+            {isSwitchPending ? "Switching" : "Switch to Sepolia"}
+          </Button>
+        ) : null}
+        <Button
+          className="mt-8 min-h-14 w-full text-lg"
+          disabled={Boolean(purchaseBlocker) || isBuySignaturePending || isBuyConfirming || isSimulating}
+          onClick={handleBuyTicket}
+        >
+          <ShoppingCart size={20} aria-hidden="true" />
+          {isSimulating
+            ? "Simulating"
+            : isBuySignaturePending
+              ? "Confirm in Wallet"
+              : isBuyConfirming
+                ? "Confirming"
+                : "Buy Ticket"}
         </Button>
         <p className="mt-5 text-center text-sm text-[var(--ce-on-surface-variant)]">
-          {isSepolia
-            ? "Ticket purchase writes are the next milestone; reads are live."
-            : "Switch to Sepolia before ticket purchase writes are enabled."}
+          Buyer pays ticket price plus gas. The ticket price is sent to the event treasury.
         </p>
+        {ownedTicket ? (
+          <StatusCallout title="Ticket already owned" tone="success">
+            You already own ticket #{ownedTicket.tokenId} for this event. If the event has not
+            started yet, your ticket will become valid during the event window.
+            <ButtonLink
+              href={`/tickets/${ownedTicket.tokenId}`}
+              tone="secondary"
+              className="mt-4 w-full"
+            >
+              View My Ticket
+            </ButtonLink>
+          </StatusCallout>
+        ) : purchaseBlocker ? (
+          <StatusCallout title="Purchase unavailable" tone="warning">
+            {purchaseBlocker}
+          </StatusCallout>
+        ) : null}
+        <div className="mt-5">
+          <TransactionStatus
+            hash={buyHash}
+            isConfirming={isBuySignaturePending || isBuyConfirming || isSimulating}
+            isSuccess={isBuySuccess}
+            error={buyError}
+          />
+        </div>
       </Panel>
       <Panel className="bg-[var(--ce-surface-container-low)] p-6">
         <p className="ce-label uppercase text-[var(--ce-on-surface-variant)]">Contract Information</p>
@@ -330,7 +696,16 @@ export function PurchasePanel({ event }: Readonly<{ event: ChainEventRecord | nu
 }
 
 export function EventDetailContent({ eventId }: Readonly<{ eventId: string }>) {
-  const { eventId: parsedEventId, event, isLoading, isError } = useEventDetail(eventId);
+  const {
+    eventId: parsedEventId,
+    event,
+    isLoading,
+    isError,
+    refetch,
+  } = useEventDetail(eventId);
+  const refetchEvent = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   return (
     <section className="grid gap-7 xl:grid-cols-[minmax(0,2fr)_minmax(360px,.95fr)]">
@@ -342,9 +717,9 @@ export function EventDetailContent({ eventId }: Readonly<{ eventId: string }>) {
           invalidEventId={parsedEventId === null}
         />
         <EventMetrics event={event} />
-        <OrganizerControls event={event} />
+        <OrganizerControls event={event} refetchEvent={refetchEvent} />
       </div>
-      <PurchasePanel event={event} />
+      <PurchasePanel event={event} refetchEvent={refetchEvent} />
     </section>
   );
 }

@@ -8,6 +8,7 @@ import {
   formatEthPrice,
   formatEventDate,
   getEventStatus,
+  getTicketStatus,
   shortenAddress,
 } from "@/lib/chain-events-format";
 import { Badge, EmptyState, Panel } from "@/components/ui/primitives";
@@ -224,32 +225,35 @@ export function DashboardTicketStack() {
   return (
     <div className="grid gap-5">
       {tickets.length > 0 ? (
-        tickets.slice(0, 3).map((ticket) => (
-          <article
-            key={ticket.tokenId}
-            className="relative overflow-hidden rounded-[var(--ce-radius-lg)] border border-[var(--ce-outline-variant)] bg-white p-5"
-          >
-            <div className="flex items-start justify-between">
-              <Badge tone={ticket.used ? "neutral" : "success"}>
-                {ticket.used ? "Checked In" : "Valid"}
-              </Badge>
-              <Ticket size={22} aria-hidden="true" className="text-[var(--ce-on-surface-variant)]" />
-            </div>
-            <h3 className="mt-7 text-xl font-semibold leading-7">{ticket.event.name}</h3>
-            <p className="mt-2 text-sm text-[var(--ce-on-surface-variant)]">
-              {formatEventDate(ticket.event.startTime, ticket.event.endTime)}
-            </p>
-            <div className="mt-8 grid grid-cols-[1fr_auto] items-end gap-4">
-              <div className="ce-label">
-                <p className="text-[var(--ce-on-surface-variant)]">Token ID: #{ticket.tokenId}</p>
-                <p>{shortenAddress(ticket.owner)}</p>
+        tickets.slice(0, 3).map((ticket) => {
+          const status = getTicketStatus(ticket);
+
+          return (
+            <Link
+              key={ticket.tokenId}
+              href={`/tickets/${ticket.tokenId}`}
+              className="relative overflow-hidden rounded-[var(--ce-radius-lg)] border border-[var(--ce-outline-variant)] bg-white p-5"
+            >
+              <div className="flex items-start justify-between">
+                <Badge tone={status.tone}>{status.label}</Badge>
+                <Ticket size={22} aria-hidden="true" className="text-[var(--ce-on-surface-variant)]" />
               </div>
-              <div className="flex size-20 items-center justify-center rounded-[var(--ce-radius)] border border-[var(--ce-outline-variant)] bg-[var(--ce-surface-container-low)]">
-                <Ticket size={30} aria-hidden="true" className="text-[var(--ce-on-surface-variant)]" />
+              <h3 className="mt-7 text-xl font-semibold leading-7">{ticket.event.name}</h3>
+              <p className="mt-2 text-sm text-[var(--ce-on-surface-variant)]">
+                {formatEventDate(ticket.event.startTime, ticket.event.endTime)}
+              </p>
+              <div className="mt-8 grid grid-cols-[1fr_auto] items-end gap-4">
+                <div className="ce-label">
+                  <p className="text-[var(--ce-on-surface-variant)]">Token ID: #{ticket.tokenId}</p>
+                  <p>{shortenAddress(ticket.owner)}</p>
+                </div>
+                <div className="flex size-20 items-center justify-center rounded-[var(--ce-radius)] border border-[var(--ce-outline-variant)] bg-[var(--ce-surface-container-low)]">
+                  <Ticket size={30} aria-hidden="true" className="text-[var(--ce-on-surface-variant)]" />
+                </div>
               </div>
-            </div>
-          </article>
-        ))
+            </Link>
+          );
+        })
       ) : (
         <article className="relative overflow-hidden rounded-[var(--ce-radius-lg)] border border-[var(--ce-outline-variant)] bg-white p-5">
           <div className="flex justify-end">
