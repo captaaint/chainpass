@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { TicketGallery } from "@/components/sections/tickets-sections";
-import { PageIntro, SearchToolbar } from "@/components/ui/primitives";
+import { PageIntro } from "@/components/ui/primitives";
 
 export default function TicketsPage() {
   return (
@@ -11,7 +11,6 @@ export default function TicketsPage() {
             title="Ticket Gallery"
             description="Manage your on-chain event access passes and digital collectibles."
           />
-          <SearchToolbar />
         </div>
         <TicketGallery />
       </div>

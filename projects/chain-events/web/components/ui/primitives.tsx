@@ -66,6 +66,7 @@ export interface ButtonProps {
   children: ReactNode;
   className?: string;
   disabled?: boolean;
+  onClick?: () => void;
   tone?: "primary" | "secondary" | "danger";
   type?: "button" | "submit";
 }
@@ -74,6 +75,7 @@ export function Button({
   children,
   className,
   disabled,
+  onClick,
   tone = "primary",
   type = "button",
 }: Readonly<ButtonProps>) {
@@ -81,6 +83,7 @@ export function Button({
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       className={cx(
         "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--ce-radius)] px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ce-secondary)] disabled:opacity-50",
         tone === "primary" &&
@@ -258,6 +261,7 @@ export interface TicketPreviewCardProps {
   variant?: "cyan" | "mono" | "gold";
   disabled?: boolean;
   highlighted?: boolean;
+  externalHref?: string;
 }
 
 export function TicketPreviewCard({
@@ -268,6 +272,7 @@ export function TicketPreviewCard({
   variant = "cyan",
   disabled,
   highlighted,
+  externalHref,
 }: Readonly<TicketPreviewCardProps>) {
   return (
     <article
@@ -289,7 +294,7 @@ export function TicketPreviewCard({
         )}
       >
         <div className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-semibold">
-          Transferable
+          Access Pass
         </div>
         <div className="absolute right-4 top-4">
           <Badge tone={highlighted ? "info" : disabled ? "neutral" : "success"}>{badge}</Badge>
@@ -313,9 +318,16 @@ export function TicketPreviewCard({
             <QrCode size={16} aria-hidden="true" />
             {disabled ? "Ticket Redeemed" : "Show QR Code"}
           </Button>
-          <a href="#" className="ce-label inline-flex items-center justify-center gap-2 text-[var(--ce-secondary)]">
-            View on Etherscan <ExternalLink size={14} aria-hidden="true" />
-          </a>
+          {externalHref ? (
+            <a
+              href={externalHref}
+              target="_blank"
+              rel="noreferrer"
+              className="ce-label inline-flex items-center justify-center gap-2 text-[var(--ce-secondary)]"
+            >
+              View on Etherscan <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          ) : null}
         </div>
       </div>
     </article>
